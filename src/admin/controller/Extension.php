@@ -2,7 +2,7 @@
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
-use tpext\manager\admin\model\Extension as ExtensionModel;
+use tpext\common\model\Extension as ExtensionModel;
 use tpext\builder\common\Builder;
 use tpext\common\ExtLoader;
 use tpext\manager\common\Module;
