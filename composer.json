@@ -1,0 +1,28 @@
+{
+    "name": "ichynul/tpextmanager",
+    "description": "thinkphp extension",
+    "type": "library",
+    "keywords": [
+        "thinkphp"
+    ],
+    "homepage": "http://www.ynyysc.com/",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "ichynul",
+            "email": "ichynul@outlook.com"
+        }
+    ],
+    "require": {
+        "topthink/framework": "5.1.*",
+        "ichynul/tpextbuilder": "^1.0.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "tpext\\manager\\": "src/"
+        },
+        "files": [
+            "src/helper.php"
+        ]
+    }
+}
