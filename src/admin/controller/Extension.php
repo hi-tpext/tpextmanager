@@ -166,25 +166,6 @@ class Extension extends Controller
             $errors = $instance->getErrors();
 
             if ($res) {
-
-                $instance->copyAssets();
-
-                $config = $instance->defaultConfig();
-
-                $this->dataModel->create([
-                    'key' => $id,
-                    'name' => $instance->getName(),
-                    'title' => $instance->getTitle(),
-                    'description' => $instance->getDescription(),
-                    'tags' => $instance->getTags(),
-                    'install' => 1,
-                    'enable' => 1,
-                    'config' => json_encode($config),
-                ]);
-
-                ExtLoader::getInstalled(true);
-                $this->clearCache();
-
                 if (empty($errors)) {
                     return $builder->layer()->closeRefresh(1, '安装成功');
                 } else {
@@ -252,12 +233,6 @@ class Extension extends Controller
             $errors = $instance->getErrors();
 
             if ($res) {
-
-                $this->dataModel->where(['key' => $id])->delete();
-
-                ExtLoader::getInstalled(true);
-
-                $this->clearCache();
                 if (empty($errors)) {
                     return $builder->layer()->closeRefresh(1, '卸载成功');
                 } else {
@@ -300,12 +275,6 @@ class Extension extends Controller
 
             return $builder->render();
         }
-    }
-
-    private function clearCache()
-    {
-        cache('tpext_modules', null);
-        cache('tpext_bind_modules', null);
     }
 
     public function copyAssets()
