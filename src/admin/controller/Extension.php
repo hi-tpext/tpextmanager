@@ -2,9 +2,10 @@
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
-use tpext\common\model\Extension as ExtensionModel;
 use tpext\builder\common\Builder;
 use tpext\common\ExtLoader;
+use tpext\common\model\Extension as ExtensionModel;
+use tpext\common\TpextCore;
 use tpext\manager\common\Module;
 
 class Extension extends Controller
@@ -16,6 +17,9 @@ class Extension extends Controller
     protected function initialize()
     {
         $this->extensions = ExtLoader::getModules();
+
+        $this->extensions[TpextCore::class] = TpextCore::getInstance();
+
         ksort($this->extensions);
 
         $this->dataModel = new ExtensionModel;
@@ -45,6 +49,13 @@ class Extension extends Controller
 
         if (empty($installed)) {
             $builder->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
+        }
+
+        if (!empty($installed)) {
+            if (!ExtensionModel::where('key', Module::class)->find()) {
+                Module::getInstance()->install();
+                $installed = ExtLoader::getInstalled();
+            }
         }
 
         foreach ($extensions as $key => $instance) {
@@ -80,7 +91,7 @@ class Extension extends Controller
                 '__d_un__' => 0,
             ];
 
-            if ($key == Module::class) {
+            if ($key == Module::class || $key == TpextCore::class) {
                 $data[$key]['__h_un__'] = 0;
                 $data[$key]['__h_st__'] = 1;
                 $data[$key]['__h_en__'] = 1;
@@ -161,7 +172,6 @@ class Extension extends Controller
         $builder = Builder::getInstance('扩展管理', '安装-' . $instance->getTitle());
 
         if (request()->isPost()) {
-            
             $res = $instance->install();
             $errors = $instance->getErrors();
 
@@ -229,7 +239,7 @@ class Extension extends Controller
         $builder = Builder::getInstance('扩展管理', '安装-' . $instance->getTitle());
 
         if (request()->isPost()) {
-            $res = $instance->install();
+            $res = $instance->uninstall();
             $errors = $instance->getErrors();
 
             if ($res) {
