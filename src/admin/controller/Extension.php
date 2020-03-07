@@ -5,7 +5,7 @@ use think\Controller;
 use tpext\manager\admin\model\Extension as ExtensionModel;
 use tpext\builder\common\Builder;
 use tpext\common\ExtLoader;
-use tpext\common\TpextModule;
+use tpext\manager\common\Module;
 
 class Extension extends Controller
 {
@@ -44,7 +44,7 @@ class Extension extends Controller
         $installed = ExtLoader::getInstalled();
 
         if (empty($installed)) {
-            $builder->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.core]', 'warning', 2000);
+            $builder->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
         }
 
         foreach ($extensions as $key => $instance) {
@@ -80,7 +80,7 @@ class Extension extends Controller
                 '__d_un__' => 0,
             ];
 
-            if ($key == TpextModule::class) {
+            if ($key == Module::class) {
                 $data[$key]['__h_un__'] = 0;
                 $data[$key]['__h_st__'] = 1;
                 $data[$key]['__h_en__'] = 1;
@@ -152,8 +152,8 @@ class Extension extends Controller
 
         $installed = ExtLoader::getInstalled();
 
-        if (empty($installed) && $id != TpextModule::class) {
-            return Builder::getInstance('扩展管理')->layer()->close(0, '已安装扩展为空！请确保数据库连接正常，然后安装[tpext.core]');
+        if (empty($installed) && $id != Module::class) {
+            return Builder::getInstance('扩展管理')->layer()->close(0, '已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
         }
 
         $instance = $this->extensions[$id];
@@ -340,7 +340,7 @@ class Extension extends Controller
         $installed = ExtLoader::getInstalled();
 
         if (empty($installed)) {
-            $this->error('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.core]');
+            $this->error('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
         }
 
         foreach ($ids as $id) {
@@ -366,11 +366,11 @@ class Extension extends Controller
         $installed = ExtLoader::getInstalled();
 
         if (empty($installed)) {
-            $this->error('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.core]');
+            $this->error('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
         }
 
         foreach ($ids as $id) {
-            if ($id == TpextModule::class) {
+            if ($id == Module::class) {
                 continue;
             }
             ExtensionModel::where(['key' => $id])->update(['enable' => 0]);
