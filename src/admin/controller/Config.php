@@ -1,8 +1,8 @@
 <?php
-namespace tpext\admin\controller;
+namespace tpext\manager\admin\controller;
 
 use think\Controller;
-use tpext\admin\model\WebConfig;
+use tpext\manager\admin\model\WebConfig;
 use tpext\builder\common\Builder;
 use tpext\builder\Common\Form;
 use tpext\builder\common\Table;

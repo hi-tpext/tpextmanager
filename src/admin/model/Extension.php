@@ -1,6 +1,6 @@
 <?php
 
-namespace tpext\admin\model;
+namespace tpext\manager\admin\model;
 
 use think\Model;
 
