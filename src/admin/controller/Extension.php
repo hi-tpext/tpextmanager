@@ -349,7 +349,7 @@ class Extension extends Controller
         }
 
         foreach ($ids as $id) {
-            if ($id == Module::class) {
+            if ($id == Module::class || $id == TpextCore::class) {
                 continue;
             }
             ExtensionModel::where(['key' => $id])->update(['enable' => 0]);
