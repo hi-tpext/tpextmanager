@@ -2,11 +2,11 @@
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
-use tpext\common\model\WebConfig;
 use tpext\builder\common\Builder;
 use tpext\builder\Common\Form;
 use tpext\builder\common\Table;
 use tpext\common\ExtLoader;
+use tpext\common\model\WebConfig;
 
 class Config extends Controller
 {
@@ -54,7 +54,7 @@ class Config extends Controller
             unset($data['__config__']);
             unset($data['config_key']);
 
-            $res = $this->seveConfig($default, $data, $config_key);
+            $res = $this->seveConfig($default, $data, $config_key, $filePath);
 
             if ($res) {
                 $this->success('修改成功，页面即将刷新~', url('index', ['confkey' => $config_key]));
@@ -243,7 +243,7 @@ EOT;
         if (request()->isPost()) {
             $data = request()->post();
 
-            $res = $this->seveConfig($default, $data, $instance->getId());
+            $res = $this->seveConfig($default, $data, $instance->getId(), $instance->configPath());
 
             if ($res) {
                 return $builder->layer()->closeRefresh(1, '修改成功，页面即将刷新~');
@@ -396,7 +396,7 @@ EOT;
         }
     }
 
-    private function seveConfig($default, $data, $config_key)
+    private function seveConfig($default, $data, $config_key, $filePath)
     {
         $values = [];
         foreach ($default as $key => $val) {
@@ -417,6 +417,8 @@ EOT;
             return $this->dataModel->where(['key' => $config_key])->update(['config' => json_encode($values)]);
         }
 
-        return $this->dataModel->create(['key' => $config_key, 'config' => json_encode($values)]);
+        $filePath = str_replace(app()->getRootPath(), '', $filePath);
+
+        return $this->dataModel->create(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values)]);
     }
 }
