@@ -85,7 +85,7 @@ class Extension extends Controller
                 '__h_in__' => $is_install,
                 '__h_un__' => !$is_install,
                 '__h_st__' => !$is_install || !$has_config,
-                '__h_en__' => $is_enable,
+                '__h_en__' => !$is_install || $is_enable,
                 '__h_dis__' => !$is_install || !$is_enable,
                 '__h_cp__' => empty($instance->getAssets()),
                 '__d_un__' => 0,
