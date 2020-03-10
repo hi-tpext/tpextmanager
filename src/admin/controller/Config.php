@@ -333,8 +333,10 @@ EOT;
         $table->show('id', 'ID');
         $table->show('key', '配置键');
         $table->text('title', '名称')->autoPost()->getWapper()->addStyle('max-width:80px');
+        $table->show('file', '路径');
         $table->show('create_time', '添加时间')->getWapper()->addStyle('width:180px');
         $table->show('update_time', '修改时间')->getWapper()->addStyle('width:180px');
+        
         $table->getToolbar()
             ->btnAdd()
             ->btnDelete();
