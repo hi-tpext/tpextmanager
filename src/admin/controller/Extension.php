@@ -193,31 +193,9 @@ class Extension extends Controller
                 return $builder->render();
             }
         } else {
-
             $form = $builder->form();
-
-            $modules = $instance->getModules();
-            $bindModules = [];
-
-            foreach ($modules as $module => $controlers) {
-                foreach ($controlers as $controler) {
-                    $bindModules[] = '/' . $module . '/' . $controler . '/*';
-                }
-            }
-
-            $form->raw('name', '标识')->value($instance->getName());
-            $form->raw('title', '标题')->value($instance->getTitle());
-            $form->raw('tags', '类型')->value($instance->getTags());
-            $form->raw('modules', '提供模块')->value(!empty($bindModules) ? implode('<br>', $bindModules) : '无');
-            $form->raw('desc', '介绍')->value($instance->getDescription());
-            $form->raw('version', '版本号')->value($instance->getVersion());
-            $form->html('', '', 6)->showLabel(false);
-            $form->btnSubmit('安&nbsp;&nbsp;装');
-            $form->btnLayerClose();
-
-            $form->ajax(false);
-
-            return $builder->render()->getContent();
+            $this->detail($form, $instance, true);
+            return $builder->render();
         }
 
     }
@@ -262,29 +240,81 @@ class Extension extends Controller
         } else {
 
             $form = $builder->form();
+            $this->detail($form, $instance, false);
+            return $builder->render();
+        }
+    }
 
-            $modules = $instance->getModules();
-            $bindModules = [];
+    /**
+     * Undocumented function
+     *
+     * @param \tpext\builder\common\Form $form
+     * @param \tpext\common\Module $instance
+     * @return void
+     */
+    public function detail($form, $instance, $isInstall = true)
+    {
+        $modules = $instance->getModules();
+        $bindModules = [];
+        foreach ($modules as $module => $controlers) {
+            foreach ($controlers as $controler) {
+                $bindModules[] = '/' . $module . '/' . $controler . '/*';
+            }
+        }
+        $form->tab('基本信息');
+        $form->raw('name', '标识')->value($instance->getName());
+        $form->raw('title', '标题')->value($instance->getTitle());
+        $form->raw('tags', '类型')->value($instance->getTags());
+        $form->raw('modules', '提供模块')->value(!empty($bindModules) ? implode('<br>', $bindModules) : '无');
+        $form->raw('desc', '介绍')->value($instance->getDescription());
+        $form->raw('version', '版本号')->value($instance->getVersion());
 
-            foreach ($modules as $module => $controlers) {
-                foreach ($controlers as $controler) {
-                    $bindModules[] = '/' . $module . '/' . $controler . '/*';
-                }
+        if ($isInstall) {
+            if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'install.sql')) {
+                $form->show('install', '安装脚本')->value('安装将运行SQL脚本');
+            } else {
+                $form->show('install', '安装脚本')->value('无');
             }
 
-            $form->raw('name', '标识')->value($instance->getName());
-            $form->raw('title', '标题')->value($instance->getTitle());
-            $form->raw('tags', '类型')->value($instance->getTags());
-            $form->raw('modules', '提供模块')->value(!empty($bindModules) ? implode('<br>', $bindModules) : '无');
-            $form->raw('desc', '介绍')->value($instance->getDescription());
-            $form->raw('version', '版本号')->value($instance->getVersion());
             $form->html('', '', 6)->showLabel(false);
             $form->btnSubmit('卸&nbsp;&nbsp;载', 1, 'btn-danger');
             $form->btnLayerClose();
-            $form->ajax(false);
-
-            return $builder->render();
+        } else {
+            if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql')) {
+                $form->show('uninstall', '卸载脚本')->value('卸载将运行SQL脚本');
+            } else {
+                $form->show('uninstall', '卸载脚本')->value('无');
+            }
+            $form->html('', '', 6)->showLabel(false);
+            $form->btnSubmit('卸&nbsp;&nbsp;载', 1, 'btn-danger');
+            $form->btnLayerClose();
         }
+
+        $form->tab('README.md');
+        $README = '暂无';
+        if (is_file($instance->getRoot() . 'README.md')) {
+            $README = file_get_contents($instance->getRoot() . 'README.md');
+        }
+        $form->mdreader('README')->jsOptions(['readOnly' => true, 'width' => 1200])->size(0, 12)->showLabel(false)->value($README);
+
+        $form->tab('CHANGELOG.md');
+        $README = '暂无';
+        if (is_file($instance->getRoot() . 'CHANGELOG.md')) {
+            $README = file_get_contents($instance->getRoot() . 'CHANGELOG.md');
+        }
+        $form->mdreader('CHANGELOG')->jsOptions(['readOnly' => true, 'width' => 1200])->size(0, 12)->showLabel(false)->value($README);
+
+        $form->tab('LICENSE.txt');
+        $LICENSE = '暂无';
+        if (is_file($instance->getRoot() . 'LICENSE.txt')) {
+            $LICENSE = '<pre>' . htmlspecialchars(file_get_contents($instance->getRoot() . 'LICENSE.txt')) . '</pre>';
+        } else if (is_file($instance->getRoot() . 'LICENSE')) {
+            $LICENSE = '<pre>' . htmlspecialchars(file_get_contents($instance->getRoot() . 'LICENSE')) . '</pre>';
+        }
+
+        $form->raw('LICENSE')->size(0, 12)->showLabel(false)->value($LICENSE);
+
+        $form->ajax(false);
     }
 
     public function copyAssets()
