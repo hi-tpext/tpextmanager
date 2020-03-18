@@ -336,7 +336,7 @@ EOT;
         $table->show('file', '路径');
         $table->show('create_time', '添加时间')->getWapper()->addStyle('width:180px');
         $table->show('update_time', '修改时间')->getWapper()->addStyle('width:180px');
-        
+
         $table->getToolbar()
             ->btnAdd()
             ->btnDelete();
@@ -404,6 +404,10 @@ EOT;
         foreach ($default as $key => $val) {
 
             if ($key == '__config__') {
+                continue;
+            }
+
+            if (!isset($data[$key])) {
                 continue;
             }
 
