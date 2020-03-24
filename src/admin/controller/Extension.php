@@ -275,7 +275,7 @@ class Extension extends Controller
             } else {
                 $form->show('install', '安装脚本')->value('无');
             }
-
+            $form->tabEnd();
             $form->html('', '', 6)->showLabel(false);
             $form->btnSubmit('安&nbsp;&nbsp;装', 1, 'btn-success btn-loading');
             $form->btnLayerClose();
@@ -285,6 +285,7 @@ class Extension extends Controller
             } else {
                 $form->show('uninstall', '卸载脚本')->value('无');
             }
+            $form->tabEnd();
             $form->html('', '', 6)->showLabel(false);
             $form->btnSubmit('卸&nbsp;&nbsp;载', 1, 'btn-danger btn-loading');
             $form->btnLayerClose();
