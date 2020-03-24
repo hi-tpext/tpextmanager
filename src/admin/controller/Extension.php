@@ -275,9 +275,8 @@ class Extension extends Controller
             } else {
                 $form->show('install', '安装脚本')->value('无');
             }
-            $form->tabEnd();
-            $form->html('', '', 6)->showLabel(false);
             $form->btnSubmit('安&nbsp;&nbsp;装', 1, 'btn-success btn-loading');
+            $form->html('', '', 3)->showLabel(false);
             $form->btnLayerClose();
         } else {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql')) {
@@ -285,9 +284,8 @@ class Extension extends Controller
             } else {
                 $form->show('uninstall', '卸载脚本')->value('无');
             }
-            $form->tabEnd();
-            $form->html('', '', 6)->showLabel(false);
             $form->btnSubmit('卸&nbsp;&nbsp;载', 1, 'btn-danger btn-loading');
+            $form->html('', '', 3)->showLabel(false);
             $form->btnLayerClose();
         }
 
