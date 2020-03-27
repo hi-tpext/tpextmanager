@@ -59,6 +59,10 @@ class Extension extends Controller
         }
 
         foreach ($extensions as $key => $instance) {
+            if (!class_exists($key)) {
+                continue;
+            }
+
             $is_install = 0;
             $is_enable = 0;
             $has_config = !empty($instance->defaultConfig());
