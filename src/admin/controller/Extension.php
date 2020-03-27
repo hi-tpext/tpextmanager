@@ -122,7 +122,7 @@ class Extension extends Controller
             ->btnEnable()
             ->btnDisable()
             ->btnRefresh()
-            ->html('<label class="label label-secondary">系统会缓存扩展信息，若你新安装的扩展不在下面的列表中，请清除缓存，然后刷新。</label>');
+            ->html('<label class="label label-secondary">你新安装的扩展不在下面的列表中，请清除缓存[cache]，然后刷新此页面。</label>');
 
         $table->getActionbar()
             ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
