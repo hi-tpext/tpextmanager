@@ -101,7 +101,7 @@ class Config extends Controller
                 }
 
                 $saved = $configData ? json_decode($configData['config'], 1) : [];
-                $form = $tab->add($instance->getTitle(), $confkey == $config_key)->form();
+                $form = $tab->form($instance->getTitle(), $confkey == $config_key);
                 $form->formId('the-from' . $config_key);
                 $form->hidden('config_key')->value($config_key);
                 $this->buildConfig($form, $default, $saved);
@@ -126,7 +126,7 @@ class Config extends Controller
                 $this->buildConfig($form, $default, $saved);
             }
 
-            $table = $tab->add('更多设置', $confkey == '__config_list__')->table();
+            $table = $tab->table('更多设置', $confkey == '__config_list__');
 
             $this->buildList($table);
 
