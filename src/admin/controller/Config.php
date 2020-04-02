@@ -120,7 +120,7 @@ class Config extends Controller
                 $default = include $filePath;
 
                 $saved = json_decode($oth['config'], 1);
-                $form = $tab->add($oth['title'], $confkey == $oth['key'])->form();
+                $form = $tab->form($oth['title'], $confkey == $oth['key']);
                 $form->formId('the-from' . $oth['key']);
                 $form->hidden('config_key')->value($oth['key']);
                 $this->buildConfig($form, $default, $saved);
