@@ -383,7 +383,11 @@ EOT;
 
                 $field = $form->$fieldType($key, $label, $colSize)->required($required)->default($val)->help($help)->size($size[0], $size[1]);
 
-                if (preg_match('/(radio|select|checkbox|multipleSelect)/i', $type['type'])) {
+                if (in_array($fieldType, ['divider', 'show', 'raw', 'html', 'items', 'fields', 'button', 'match', 'matches'])) {
+                    continue;
+                }
+
+                if (in_array($fieldType, ['radio', 'select', 'checkbox', 'multipleSelect'])) {
 
                     $field->options(isset($type['options']) ? $type['options'] : [0 => '为什么没有选项？', 1 => '？项选有没么什为']);
                 }

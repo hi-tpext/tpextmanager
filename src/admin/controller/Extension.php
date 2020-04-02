@@ -16,6 +16,9 @@ class Extension extends Controller
 
     protected function initialize()
     {
+        cache('tpext_modules', null);
+        cache('tpext_bind_modules', null);
+
         $this->extensions = ExtLoader::getModules();
 
         $this->extensions[TpextCore::class] = TpextCore::getInstance();
@@ -45,7 +48,7 @@ class Extension extends Controller
 
         $data = [];
 
-        $installed = ExtLoader::getInstalled();
+        $installed = ExtLoader::getInstalled(true);
 
         if (empty($installed)) {
             $builder->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
@@ -54,7 +57,7 @@ class Extension extends Controller
         if (!empty($installed)) {
             if (!ExtensionModel::where('key', Module::class)->find()) {
                 Module::getInstance()->install();
-                $installed = ExtLoader::getInstalled();
+                $installed = ExtLoader::getInstalled(true);
             }
         }
 
@@ -125,8 +128,7 @@ class Extension extends Controller
         $table->getToolbar()
             ->btnEnable()
             ->btnDisable()
-            ->btnRefresh()
-            ->html('<label class="label label-secondary pull-right m-r-10">若你新安装的扩展不在列表中，清除缓存[cache]，刷新此页面。</label>');
+            ->btnRefresh();
 
         $table->getActionbar()
             ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
