@@ -15,7 +15,8 @@
     ],
     "require": {
         "topthink/framework": "5.1.*",
-        "ichynul/tpextbuilder": "^1.0.1"
+        "ichynul/tpextbuilder": "^1.0.1",
+        "ichynul/builder-mdeditor": "^^1.0.1"
     },
     "autoload": {
         "psr-4": {
