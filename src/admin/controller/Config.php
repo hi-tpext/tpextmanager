@@ -163,6 +163,10 @@ class Config extends Controller
                 $this->error('不是php文件，请核查');
             }
 
+            if (preg_match('/config\/(app|database)\.php$/i', $data['file'])) {
+                $this->error('安全原因禁止创建！');
+            }
+
             if (empty($data['key'])) {
                 $data['key'] = $matches[1];
             }
@@ -203,7 +207,7 @@ class Config extends Controller
                     'isRandName' => ['type' => 'radio', 'label' => '随机文件名', 'options' => [0 => '否', 1 => '是'], 'col_size' => 6, 'size' => [3, 8]],
                 ], //支持【tpext-builder】表单元素 ，不是太复杂的大多能满足。配置的值尽量为常规类型，如果是数组则会转换成json。
             ];
-            //使用 \\tpext\admin\model\config('myconfig');
+            //使用 \\tpext\admin\model\config('myconfig');//不支持config('myconfig');
             </code>
 EOT;
             $builder = Builder::getInstance('配置管理', '添加');
@@ -211,7 +215,7 @@ EOT;
             $form->text('title', '名称')->required()->help('给配置取个名字，如: 商城');
             $form->text('key', '配置键')->help('不填则以文件名为键');
             $form->text('file', '文件路径')->required()->beforSymbol('<code>RootPath .</code>')
-                ->help('文件路径，从网站根目录开始，如 <code>config/myconfig.php</code>');
+                ->help('文件路径，从网站根目录开始，如 <code>conf/myconfig.php</code>(不建议使用`config`/里面的文件做配置)');
             $form->raw('template', '示例')->value($template)->size(2, 10);
 
             return $builder->render();
