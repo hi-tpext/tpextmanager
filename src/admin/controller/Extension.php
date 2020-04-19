@@ -103,7 +103,6 @@ class Extension extends Controller
                 $data[$key]['__h_en__'] = 1;
                 $data[$key]['__h_dis__'] = 1;
                 $data[$key]['__h_cp__'] = 1;
-                $data[$key]['__d_un__'] = 1;
             }
         }
         
@@ -143,7 +142,7 @@ class Extension extends Controller
             ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"')
             ->mapClass([
                 'install' => ['hidden' => '__h_in__'],
-                'uninstall' => ['hidden' => '__h_un__', 'disabled' => '__d_un__'],
+                'uninstall' => ['hidden' => '__h_un__'],
                 'setting' => ['hidden' => '__h_st__'],
                 'enable' => ['hidden' => '__h_en__'],
                 'disable' => ['hidden' => '__h_dis__'],
