@@ -16,7 +16,7 @@ class Config extends Controller
 
     protected function initialize()
     {
-        $this->extensions = ExtLoader::getModules();
+        $this->extensions = ExtLoader::getExtensions();
         ksort($this->extensions);
 
         $this->dataModel = new WebConfig;

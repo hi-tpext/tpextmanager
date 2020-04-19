@@ -5,6 +5,7 @@ use think\Controller;
 use tpext\builder\common\Builder;
 use tpext\common\ExtLoader;
 use tpext\common\model\Extension as ExtensionModel;
+use tpext\common\Module as BaseModule;
 use tpext\common\TpextCore;
 use tpext\manager\common\Module;
 
@@ -19,7 +20,7 @@ class Extension extends Controller
         cache('tpext_modules', null);
         cache('tpext_bind_modules', null);
 
-        $this->extensions = ExtLoader::getModules();
+        $this->extensions = ExtLoader::getExtensions();
 
         $this->extensions[TpextCore::class] = TpextCore::getInstance();
 
@@ -88,6 +89,7 @@ class Extension extends Controller
                 'title' => $instance->getTitle(),
                 'description' => $instance->getDescription(),
                 'version' => $instance->getVersion(),
+                'ext_type' => $instance instanceof BaseModule ? 1 : 2,
                 'tags' => $instance->getTags(),
                 '__h_in__' => $is_install,
                 '__h_un__' => !$is_install,
@@ -108,11 +110,16 @@ class Extension extends Controller
             }
         }
 
-        $table->field('name', '标识');
-        $table->field('title', '标题');
-        $table->field('tags', '类型');
-        $table->field('description', '介绍');
-        $table->field('version', '版本号');
+        $table->show('name', '标识');
+        $table->show('title', '标题');
+        $table->match('ext_type', '扩展类型')->options(
+            [
+                1 => '<label class="label label-info">模块</label>',
+                2 => '<label class="label label-success">资源</label>',
+            ]);
+        $table->show('tags', '分类');
+        $table->show('description', '介绍');
+        $table->show('version', '版本号');
         $table->match('install', '安装')->options(
             [
                 0 => '<label class="label label-secondary">未安装</label>',
@@ -261,7 +268,7 @@ class Extension extends Controller
      */
     public function detail($form, $instance, $isInstall = true)
     {
-        $modules = $instance->getModules();
+        $modules = $instance instanceof BaseModule ? $instance->getModules() : [];
         $bindModules = [];
         foreach ($modules as $module => $controlers) {
             foreach ($controlers as $controler) {
