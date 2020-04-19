@@ -17,8 +17,7 @@ class Extension extends Controller
 
     protected function initialize()
     {
-        cache('tpext_modules', null);
-        cache('tpext_bind_modules', null);
+        ExtLoader::clearCache();
 
         $this->extensions = ExtLoader::getExtensions();
 
@@ -33,7 +32,7 @@ class Extension extends Controller
     {
         $builder = Builder::getInstance('扩展管理', '列表');
 
-        $pagezise = 10;
+        $pagesize = 14;
 
         $table = $builder->table();
 
@@ -43,9 +42,7 @@ class Extension extends Controller
             $page = 1;
         }
 
-        $table->paginator(count($this->extensions), $pagezise);
-
-        $extensions = array_slice($this->extensions, ($page - 1) * $pagezise, $pagezise);
+        $extensions = array_slice($this->extensions, ($page - 1) * $pagesize, $pagesize);
 
         $data = [];
 
@@ -109,16 +106,16 @@ class Extension extends Controller
                 $data[$key]['__d_un__'] = 1;
             }
         }
-
-        $table->show('name', '标识');
+        
         $table->show('title', '标题');
+        $table->show('name', '标识');
         $table->match('ext_type', '扩展类型')->options(
             [
                 1 => '<label class="label label-info">模块</label>',
                 2 => '<label class="label label-success">资源</label>',
             ]);
         $table->show('tags', '分类');
-        $table->show('description', '介绍');
+        $table->show('description', '介绍')->getWapper()->addStyle('width:40%;');
         $table->show('version', '版本号');
         $table->match('install', '安装')->options(
             [
@@ -143,7 +140,7 @@ class Extension extends Controller
             ->btnLink('setting', url('config/extConfig', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置"')
             ->btnEnable()
             ->btnDisable()
-            ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-cyan', 'mdi-refresh', 'title="刷新资源"')
+            ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"')
             ->mapClass([
                 'install' => ['hidden' => '__h_in__'],
                 'uninstall' => ['hidden' => '__h_un__', 'disabled' => '__d_un__'],
@@ -154,6 +151,8 @@ class Extension extends Controller
             ]);
 
         $table->data($data);
+
+        $table->paginator(count($this->extensions), $pagesize);
 
         if (request()->isAjax()) {
 
