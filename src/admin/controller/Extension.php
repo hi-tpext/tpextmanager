@@ -105,7 +105,7 @@ class Extension extends Controller
                 $data[$key]['__h_cp__'] = 1;
             }
         }
-        
+
         $table->show('title', '标题');
         $table->show('name', '标识');
         $table->match('ext_type', '扩展类型')->options(
@@ -139,7 +139,8 @@ class Extension extends Controller
             ->btnLink('setting', url('config/extConfig', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置"')
             ->btnEnable()
             ->btnDisable()
-            ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"')
+            ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"'
+                , '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？')
             ->mapClass([
                 'install' => ['hidden' => '__h_in__'],
                 'uninstall' => ['hidden' => '__h_un__'],
