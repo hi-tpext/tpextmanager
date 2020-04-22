@@ -294,7 +294,7 @@ EOT;
             $this->error('不允许的操作');
         }
 
-        $res = $this->dataModel->where(['id' => $id])->update([$name => $value]);
+        $res = $this->dataModel->update([$name => $value], ['id' => $id]);
 
         if ($res) {
             $this->success('修改成功');
@@ -427,7 +427,7 @@ EOT;
         $this->dataModel::clearCache($config_key);
 
         if ($this->dataModel->where(['key' => $config_key])->find()) {
-            return $this->dataModel->where(['key' => $config_key])->update(['config' => json_encode($values)]);
+            return $this->dataModel->update(['config' => json_encode($values)], ['key' => $config_key]);
         }
 
         $filePath = str_replace(app()->getRootPath(), '', $filePath);

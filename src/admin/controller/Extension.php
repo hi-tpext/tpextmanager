@@ -365,7 +365,7 @@ class Extension extends Controller
         }
 
         foreach ($ids as $id) {
-            ExtensionModel::where(['key' => $id])->update(['enable' => 1]);
+            ExtensionModel::where(['key' => $id])->update(['enable' => 1], ['key' => $id]);
         }
 
         ExtLoader::getInstalled(true);
@@ -394,7 +394,7 @@ class Extension extends Controller
             if ($id == Module::class || $id == TpextCore::class) {
                 continue;
             }
-            ExtensionModel::where(['key' => $id])->update(['enable' => 0]);
+            ExtensionModel::update(['enable' => 0], ['key' => $id]);
         }
 
         ExtLoader::getInstalled(true);
