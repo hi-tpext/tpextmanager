@@ -371,7 +371,7 @@ EOT;
             }
 
             if (is_array($val)) {
-                $val = json_encode($val);
+                $saved[$key] = json_encode($saved[$key]);
             }
 
             if (isset($fiedTypes[$key])) {
@@ -421,7 +421,7 @@ EOT;
             $values[$key] = $data[$key];
 
             if (is_array($val)) {
-                $values[$key] = json_encode($data[$key]);
+                $values[$key] = json_decode($data[$key]);
             }
         }
         $this->dataModel::clearCache($config_key);
