@@ -129,16 +129,16 @@ class Extension extends Controller
             ]);
 
         $table->getToolbar()
-            ->btnEnable()
-            ->btnDisable()
+            ->btnEnable(url('enable', ['state' => 1]))
+            ->btnDisable(url('enable', ['state' => 0]))
             ->btnRefresh();
 
         $table->getActionbar()
             ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
             ->btnLink('uninstall', url('uninstall', ['key' => '__data.id__']), '', 'btn-danger', 'mdi-delete', 'title="卸载"')
             ->btnLink('setting', url('config/extConfig', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置"')
-            ->btnEnable()
-            ->btnDisable()
+            ->btnEnable(url('enable', ['state' => 1]))
+            ->btnDisable(url('enable', ['state' => 0]))
             ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"'
                 , '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？')
             ->mapClass([
@@ -347,7 +347,7 @@ class Extension extends Controller
         $this->success('刷新成功');
     }
 
-    public function enable()
+    public function enable($state)
     {
         $keys = input('ids', '');
         $ids = str_replace('.', '\\', $keys);
@@ -364,41 +364,30 @@ class Extension extends Controller
             $this->error('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
         }
 
-        foreach ($ids as $id) {
-            ExtensionModel::where(['key' => $id])->update(['enable' => 1], ['key' => $id]);
-        }
-
-        ExtLoader::getInstalled(true);
-
-        $this->success('启用成功');
-    }
-
-    public function disable()
-    {
-        $keys = input('ids', '');
-        $ids = str_replace('.', '\\', $keys);
-
-        $ids = array_filter(explode(',', $ids), 'strlen');
-
-        if (empty($ids)) {
-            $this->error('参数有误');
-        }
-
-        $installed = ExtLoader::getInstalled();
-
-        if (empty($installed)) {
-            $this->error('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
-        }
+        $res = 0;
 
         foreach ($ids as $id) {
             if ($id == Module::class || $id == TpextCore::class) {
                 continue;
             }
-            ExtensionModel::update(['enable' => 0], ['key' => $id]);
+
+            if (ExtensionModel::update(['enable' => $state], ['key' => $id])) {
+                $res += 1;
+
+                $instance = $this->extensions[$id];
+
+                $instance->enabled($state);
+            }
         }
 
         ExtLoader::getInstalled(true);
 
-        $this->success('禁用成功');
+        if ($res) {
+            $this->success('成功' . ($state == 1 ? '启用' : '禁用') . $res . '个扩展');
+        } else {
+            $this->error('操作失败');
+        }
+
+        $this->success('启用成功');
     }
 }
