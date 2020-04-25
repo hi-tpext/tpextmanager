@@ -227,7 +227,7 @@ EOT;
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
 
-        $id = str_replace('.', '\\', $key);
+        $id = str_replace('-', '\\', $key);
 
         if (!isset($this->extensions[$id])) {
             return Builder::getInstance()->layer()->close(0, '扩展不存在！');

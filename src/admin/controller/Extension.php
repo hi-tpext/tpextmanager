@@ -32,8 +32,6 @@ class Extension extends Controller
     {
         $builder = Builder::getInstance('扩展管理', '列表');
 
-        $pagesize = 14;
-
         $table = $builder->table();
 
         $page = input('__page__/d', 1);
@@ -41,6 +39,10 @@ class Extension extends Controller
         if ($page < 1) {
             $page = 1;
         }
+
+        $pagesize = input('__pagesize__/d', 0);
+
+        $pagesize = $pagesize ?: 14;
 
         $extensions = array_slice($this->extensions, ($page - 1) * $pagesize, $pagesize);
 
@@ -78,8 +80,8 @@ class Extension extends Controller
 
             $instance->copyAssets();
 
-            $data[$key] = [
-                'id' => str_replace('\\', '.', $key),
+            $data[] = [
+                'id' => str_replace('\\', '-', $key),
                 'install' => $is_install,
                 'enable' => $is_enable,
                 'name' => $instance->getName(),
@@ -91,8 +93,6 @@ class Extension extends Controller
                 '__h_in__' => $is_install,
                 '__h_un__' => !$is_install,
                 '__h_st__' => !$is_install || !$has_config,
-                '__h_en__' => !$is_install || $is_enable,
-                '__h_dis__' => !$is_install || !$is_enable,
                 '__h_cp__' => empty($instance->getAssets()),
                 '__d_un__' => 0,
             ];
@@ -100,8 +100,6 @@ class Extension extends Controller
             if ($key == Module::class || $key == TpextCore::class) {
                 $data[$key]['__h_un__'] = 0;
                 $data[$key]['__h_st__'] = 1;
-                $data[$key]['__h_en__'] = 1;
-                $data[$key]['__h_dis__'] = 1;
                 $data[$key]['__h_cp__'] = 1;
             }
         }
@@ -122,31 +120,21 @@ class Extension extends Controller
                 1 => '<label class="label label-success">已安装</label>',
             ]);
 
-        $table->match('enable', '启用')->options(
-            [
-                0 => '<label class="label label-secondary">未启用</label>',
-                1 => '<label class="label label-success">已启用</label>',
-            ]);
+        $table->switchBtn('enable', '启用')->autoPost(url('enable'));
 
         $table->getToolbar()
-            ->btnEnable(url('enable', ['state' => 1]))
-            ->btnDisable(url('enable', ['state' => 0]))
             ->btnRefresh();
 
         $table->getActionbar()
             ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
             ->btnLink('uninstall', url('uninstall', ['key' => '__data.id__']), '', 'btn-danger', 'mdi-delete', 'title="卸载"')
             ->btnLink('setting', url('config/extConfig', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置"')
-            ->btnEnable(url('enable', ['state' => 1]))
-            ->btnDisable(url('enable', ['state' => 0]))
             ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"'
                 , '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？')
             ->mapClass([
                 'install' => ['hidden' => '__h_in__'],
                 'uninstall' => ['hidden' => '__h_un__'],
                 'setting' => ['hidden' => '__h_st__'],
-                'enable' => ['hidden' => '__h_en__'],
-                'disable' => ['hidden' => '__h_dis__'],
                 'copyAssets' => ['hidden' => '__h_cp__'],
             ]);
 
@@ -168,7 +156,7 @@ class Extension extends Controller
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
 
-        $id = str_replace('.', '\\', $key);
+        $id = str_replace('-', '\\', $key);
 
         if (!isset($this->extensions[$id])) {
             return Builder::getInstance('扩展管理')->layer()->close(0, '扩展不存在！');
@@ -219,7 +207,7 @@ class Extension extends Controller
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
 
-        $id = str_replace('.', '\\', $key);
+        $id = str_replace('-', '\\', $key);
 
         if (!isset($this->extensions[$id])) {
             return Builder::getInstance('扩展管理')->layer()->close(0, '扩展不存在！');
@@ -332,7 +320,7 @@ class Extension extends Controller
     public function copyAssets()
     {
         $ids = input('ids', '');
-        $ids = str_replace('.', '\\', $ids);
+        $ids = str_replace('-', '\\', $ids);
 
         $ids = array_filter(explode(',', $ids), 'strlen');
 
@@ -347,47 +335,33 @@ class Extension extends Controller
         $this->success('刷新成功');
     }
 
-    public function enable($state)
+    public function enable()
     {
-        $keys = input('ids', '');
-        $ids = str_replace('.', '\\', $keys);
+        $id = input('post.id', '');
+        $value = input('post.value', '0');
 
-        $ids = array_filter(explode(',', $ids), 'strlen');
-
-        if (empty($ids)) {
+        if (empty($id)) {
             $this->error('参数有误');
         }
 
-        $installed = ExtLoader::getInstalled();
+        $id = str_replace('-', '\\', $id);
 
-        if (empty($installed)) {
-            $this->error('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
+        if (!isset($this->extensions[$id])) {
+            $this->error('扩展不存在！');
         }
 
-        $res = 0;
-
-        foreach ($ids as $id) {
-            if ($id == Module::class || $id == TpextCore::class) {
-                continue;
-            }
-
-            if (ExtensionModel::update(['enable' => $state], ['key' => $id])) {
-                $res += 1;
-
-                $instance = $this->extensions[$id];
-
-                $instance->enabled($state);
-            }
-        }
-
-        ExtLoader::getInstalled(true);
+        $res = $this->dataModel->update(['enable' => $value], ['key' => $id]);
 
         if ($res) {
-            $this->success('成功' . ($state == 1 ? '启用' : '禁用') . $res . '个扩展');
-        } else {
-            $this->error('操作失败');
-        }
+            $instance = $this->extensions[$id];
 
-        $this->success('启用成功');
+            $instance->enabled($value);
+
+            ExtLoader::getInstalled(true);
+
+            $this->success(($value == 1 ? '启用' : '禁用') . '成功');
+        } else {
+            $this->error('修改失败，或无更改');
+        }
     }
 }
