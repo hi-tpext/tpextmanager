@@ -61,6 +61,7 @@ class Extension extends Controller
             }
         }
 
+        $k = 0;
         foreach ($extensions as $key => $instance) {
             if (!class_exists($key)) {
                 continue;
@@ -80,7 +81,7 @@ class Extension extends Controller
 
             $instance->copyAssets();
 
-            $data[] = [
+            $data[$k] = [
                 'id' => str_replace('\\', '-', $key),
                 'install' => $is_install,
                 'enable' => $is_enable,
@@ -98,10 +99,12 @@ class Extension extends Controller
             ];
 
             if ($key == Module::class || $key == TpextCore::class) {
-                $data[$key]['__h_un__'] = 0;
-                $data[$key]['__h_st__'] = 1;
-                $data[$key]['__h_cp__'] = 1;
+                $data[$k]['__h_un__'] = 0;
+                $data[$k]['__h_st__'] = 1;
+                $data[$k]['__h_cp__'] = 1;
             }
+
+            $k += 1;
         }
 
         $table->show('title', '标题');
