@@ -350,8 +350,6 @@ EOT;
         $data = $this->dataModel->order('key')->select();
 
         $table->data($data);
-
-        $table->paginator(998, 999);
     }
 
     private function buildConfig(Form &$form, $default, $saved = [])
