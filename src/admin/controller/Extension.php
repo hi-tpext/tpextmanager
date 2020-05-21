@@ -95,7 +95,6 @@ class Extension extends Controller
                 '__h_un__' => !$is_install,
                 '__h_st__' => !$is_install || !$has_config,
                 '__h_cp__' => empty($instance->getAssets()),
-                '__d_un__' => 0,
             ];
 
             if ($key == Module::class || $key == TpextCore::class) {
@@ -123,7 +122,8 @@ class Extension extends Controller
                 1 => '<label class="label label-success">已安装</label>',
             ]);
 
-        $table->switchBtn('enable', '启用')->autoPost(url('enable'));
+        $table->switchBtn('enable', '启用')->autoPost(url('enable'))
+            ->mapClassWhen([0], 'hidden', 'install');
 
         $table->getToolbar()
             ->btnRefresh();
@@ -256,7 +256,7 @@ class Extension extends Controller
      * @param \tpext\common\Module $instance
      * @return void
      */
-    public function detail($form, $instance, $isInstall = true)
+    private function detail($form, $instance, $isInstall = true)
     {
         $modules = $instance instanceof BaseModule ? $instance->getModules() : [];
         $bindModules = [];
