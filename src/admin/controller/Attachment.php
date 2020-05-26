@@ -75,7 +75,7 @@ class Attachment extends Controller
 
         $table->getToolbar()
             ->btnRefresh()
-            ->btnImport(url('uploadSuccess'), 'jpg,jpeg,gif,wbmp,webpg,png,bmp,ico,rar,zip,doc,docx,xls,xlsx,ppt,pptx,pdf,txt,md', ['400px', '200px'], 20, '上传文件');
+            ->btnImport(url('uploadSuccess'), '', ['250px', '205px'], 0, '上传文件');
 
         foreach ($data as &$d) {
             $d['file'] = $d['url'];
@@ -88,7 +88,7 @@ class Attachment extends Controller
     {
         $builder = $this->builder('上传成功');
 
-        $builder->addScript('parent.$(".btn-refresh").trigger("click");'); //刷新列表页
+        $builder->addScript('parent.lightyear.notify("上传成功","success");parent.$(".search-refresh").trigger("click");parent.layer.close(parent.layer.getFrameIndex(window.name));'); //刷新列表页
 
         $fileurl = input('fileurl');
 
