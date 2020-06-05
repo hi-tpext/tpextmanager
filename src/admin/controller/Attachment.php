@@ -75,7 +75,7 @@ class Attachment extends Controller
 
         $table->getToolbar()
             ->btnRefresh()
-            ->btnImport(url('uploadSuccess'), '', ['250px', '205px'], 0, '上传文件');
+            ->btnImport(url('uploadSuccess'), '', ['250px', '205px'], 0, '上传');
 
         foreach ($data as &$d) {
             $d['file'] = $d['url'];
