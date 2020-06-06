@@ -1,4 +1,5 @@
 <?php
+
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
@@ -97,7 +98,8 @@ class Config extends Controller
                             'title' => $instance->getTitle(),
                             'file' => str_replace(app()->getRootPath(), '', $instance->configPath()),
                             'config' => json_encode($default),
-                        ]);
+                        ]
+                    );
                 }
 
                 $saved = $configData ? json_decode($configData['config'], 1) : [];
@@ -253,7 +255,6 @@ EOT;
             } else {
                 return $builder->layer()->closeRefresh(0, '修改失败，或无变化');
             }
-
         } else {
 
             $form = $builder->form();
@@ -267,7 +268,8 @@ EOT;
                         'title' => $instance->getTitle(),
                         'file' => str_replace(app()->getRootPath(), '', $instance->configPath()),
                         'config' => json_encode($default),
-                    ]);
+                    ]
+                );
             }
 
             $saved = $configData ? json_decode($configData['config'], 1) : [];
@@ -356,10 +358,10 @@ EOT;
     {
         $savedKeys = array_keys($saved);
 
-        $fiedTypes = [];
+        $fieldTypes = [];
 
         if (isset($default['__config__'])) {
-            $fiedTypes = $default['__config__'];
+            $fieldTypes = $default['__config__'];
         }
 
         foreach ($default as $key => $val) {
@@ -372,8 +374,8 @@ EOT;
                 $saved[$key] = json_encode($saved[$key]);
             }
 
-            if (isset($fiedTypes[$key])) {
-                $type = $fiedTypes[$key];
+            if (isset($fieldTypes[$key])) {
+                $type = $fieldTypes[$key];
 
                 $fieldType = $type['type'];
                 $label = isset($type['label']) ? $type['label'] : '';
@@ -392,6 +394,15 @@ EOT;
 
                     $field->options(isset($type['options']) ? $type['options'] : [0 => '为什么没有选项？', 1 => '？项选有没么什为']);
                 }
+            } else if (strpos($key, '__br__') !== false) {
+
+                $field = $form->html($val)->getWapper()->style($val ? '' : 'visibility:hidden;height:1px;padding:0;margin:0;');
+            } else if (strpos($key, '__hr__') !== false) {
+
+                $field = $form->divider($val);
+            } else if ($key == 'fieldsEnd') {
+
+                $form->fieldsEnd();
             } else {
 
                 $field = $form->text($key)->default($val);
