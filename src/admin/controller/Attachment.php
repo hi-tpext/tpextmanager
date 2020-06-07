@@ -65,8 +65,8 @@ class Attachment extends Controller
         $table->show('id', 'ID');
         $table->text('name', '文件名')->autoPost();
         $table->show('mime', 'mime类型');
-        $table->show('size', '大小')->to('__val__MB');
-        $table->raw('url', '链接')->to('<a href="__val__" target="_blank">__val__</a>');
+        $table->show('size', '大小')->to('{val}MB');
+        $table->raw('url', '链接')->to('<a href="{val}" target="_blank">{val}</a>');
         $table->file('file', '文件');
         $table->show('suffix', '后缀')->getWapper()->addStyle('width:80px');
         $table->show('storage', '位置');

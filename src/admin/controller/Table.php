@@ -5,6 +5,7 @@ namespace tpext\manager\admin\controller;
 use think\Controller;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
+use tpext\manager\logic\DbLogic;
 
 use think\Db;
 
@@ -13,8 +14,14 @@ class Table extends Controller
     use HasBase;
     use HasIndex;
 
-    protected $dataModel;
     protected $database = '';
+
+    /**
+     * Undocumented variable
+     *
+     * @var DbLogic
+     */
+    protected $dbLogic;
 
     protected function initialize()
     {
@@ -23,6 +30,8 @@ class Table extends Controller
         $this->pk = 'TABLE_NAME';
 
         $this->database =  config('database.database');
+
+        $this->dbLogic = new DbLogic;
     }
 
     protected function filterWhere()
@@ -56,14 +65,107 @@ class Table extends Controller
         $where = $this->filterWhere();
         $table = $this->table;
 
-        $data = Db::query('select TABLE_NAME,TABLE_ROWS,CREATE_TIME,TABLE_COLLATION,TABLE_COMMENT,ENGINE,AUTO_INCREMENT,AVG_ROW_LENGTH,INDEX_LENGTH'
-            . " from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' and `TABLE_TYPE`='BASE TABLE' {$where} ORDER BY {$sortOrder}");
+        $data = $this->dbLogic->getTables('TABLE_NAME,TABLE_ROWS,CREATE_TIME,TABLE_COLLATION,TABLE_COMMENT,ENGINE,AUTO_INCREMENT,AVG_ROW_LENGTH,INDEX_LENGTH', $where, $sortOrder);
 
         $this->buildTable($data);
         $table->fill($data);
         $table->sortOrder($sortOrder);
 
         return $data;
+    }
+
+    public function add()
+    {
+        if (request()->isPost()) {
+            return $this->save();
+        } else {
+            $builder = $this->builder($this->pageTitle, $this->addText);
+            $form = $builder->form();
+            $data = [];
+            $this->form = $form;
+            $this->builForm(false, $data);
+            $form->fill($data);
+            return $builder->render();
+        }
+    }
+
+    public function edit($id)
+    {
+        if (request()->isPost()) {
+            return $this->save($id);
+        } else {
+            $builder = $this->builder($this->pageTitle, $this->editText);
+            $data = $this->dbLogic->getTable($id);
+            if (!$data) {
+                return $builder->layer()->close(0, '数据不存在');
+            }
+            $form = $builder->form();
+            $this->form = $form;
+            $this->builForm(true, $data);
+            $form->fill($data);
+
+            return $builder->render();
+        }
+    }
+
+    /**
+     * 构建表单
+     *
+     * @param boolean $isEdit
+     * @param array $data
+     */
+    protected function builForm($isEdit, &$data = [])
+    {
+        $form = $this->form;
+
+        $form->text('TABLE_COMMENT', '表注释')->required()->maxlength(50);
+        $form->text('TABLE_NAME', '表名')->required()->maxlength(50)->help($isEdit ? '请不要随意修改' : '');
+
+        if ($isEdit) {
+
+            $data['DATA_SIZE'] = $this->dbLogic->getDataSize($data);;
+
+            $form->show('TABLE_ROWS', '记录条数');
+            $form->show('AUTO_INCREMENT', '自增id');
+            $form->show('DATA_SIZE', '数据大小')->to('{val}MB');
+            $form->show('TABLE_COLLATION', '排序规则');
+            $form->show('ENGINE', '存储引擎');
+            $form->show('CREATE_TIME', '创建时间');
+        }
+    }
+
+    /**
+     * 保存数据 范例
+     *
+     * @param integer $id
+     * @return mixed
+     */
+    private function save($id = 0)
+    {
+        $data = request()->only([
+            'TABLE_NAME',
+            'TABLE_COMMENT',
+        ], 'post');
+
+        $result = $this->validate($data, [
+            'TABLE_NAME|表名' => 'require',
+            'TABLE_COMMENT|表注释' => 'require',
+        ]);
+
+        if (true !== $result) {
+            $this->error($result);
+        }
+
+        if ($id) {
+            $res = $this->dbLogic->updateTable($id, $data);
+        } else {
+            $res = $this->dbLogic->createTable($data['TABLE_NAME'], $data);
+        }
+        if (!$res) {
+            $this->error('保存失败');
+        }
+
+        return $this->builder()->layer()->closeRefresh(1, '保存成功');
     }
 
     /**
@@ -75,19 +177,19 @@ class Table extends Controller
     {
         $table = $this->table;
 
-        $table->show('TABLE_NAME', '表名');
+        $table->text('TABLE_COMMENT', '表注释')->autoPost('', true)->getWapper()->addStyle('width:260px');
+        $table->text('TABLE_NAME', '表名')->autoPost('', true)->getWapper()->addStyle('width:260px');
         $table->show('TABLE_ROWS', '记录条数');
-        $table->show('TABLE_COLLATION', '字符集');
-        $table->text('TABLE_COMMENT', '表注释')->autoPost()->getWapper()->addStyle('width:260px');
-        $table->show('ENGINE', '存储引擎');
         $table->show('AUTO_INCREMENT', '自增id');
-        $table->show('DATA_SIZE', '数据大小')->to('__val__MB');
+        $table->show('DATA_SIZE', '数据大小')->to('{val}MB');
+        $table->show('TABLE_COLLATION', '排序规则');
+        $table->show('ENGINE', '存储引擎');
+        $table->show('CREATE_TIME', '创建时间')->getWapper()->addStyle('width:160px');
 
         foreach ($data as &$d) {
-            $d['DATA_SIZE'] = round(($d['AVG_ROW_LENGTH'] * $d['TABLE_ROWS'] + $d['INDEX_LENGTH']) / 1024 / 1024, 2);
+            $d['DATA_SIZE'] = $this->dbLogic->getDataSize($d);
         }
-
-        $table->show('CREATE_TIME', '创建时间')->getWapper()->addStyle('width:160px');
+        unset($d);
 
         $table->getToolbar()
             ->btnAdd()
@@ -108,15 +210,16 @@ class Table extends Controller
 
         $res = 0;
 
-        if ($name = 'TABLE_COMMENT') {
-            Db::execute("ALTER TABLE `{$id}` COMMENT '{$value}'");
-            $res = 1;
+        if ($name == 'TABLE_COMMENT') {
+            $res =   $this->dbLogic->changeComment($id, $value);
+        } else if ($name == 'TABLE_NAME') {
+            $res =   $this->dbLogic->changeTableName($id, $value);
         }
 
         if ($res) {
             $this->success('修改成功');
         } else {
-            $this->error('修改失败');
+            $this->error('修改失败，或无更改');
         }
     }
 }
