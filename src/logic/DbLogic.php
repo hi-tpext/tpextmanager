@@ -9,9 +9,26 @@ class DbLogic
 {
     protected $database = '';
 
+    protected $errors = [];
+
     public function __construct()
     {
         $this->database =  config('database.database');
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getErrors()
+    {
+        return  $this->errors;
+    }
+
+    public function getErrorsText()
+    {
+        return  implode('<br>', $this->errors);
     }
 
     /**
@@ -24,7 +41,7 @@ class DbLogic
      */
     public function getTables($columns = '*', $where = '', $sortOrder = 'TABLE_NAME ASC')
     {
-        $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' {$where} ORDER BY {$sortOrder}");
+        $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
         return $tables;
     }
@@ -38,9 +55,16 @@ class DbLogic
      */
     public function getTable($table_name, $columns = '*')
     {
-        $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME`='{$table_name}'");
+        $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` NOT LIKE '%_del_at_%' AND `TABLE_NAME`='{$table_name}'");
 
         return count($tables) ? $tables[0] : null;
+    }
+
+    public function getTFields($table_name, $columns = '*', $where = '', $sortOrder = 'ORDINAL_POSITION ASC')
+    {
+        $tables = Db::query("select {$columns} from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$table_name}' AND `COLUMN_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
+
+        return $tables;
     }
 
     /**
@@ -55,6 +79,7 @@ class DbLogic
         $tableInfo = $this->getTable($table_name, 'TABLE_NAME,TABLE_COMMENT');
 
         if (!$tableInfo) {
+            $this->errors[] = '表不存在';
             return false;
         }
 
@@ -82,6 +107,55 @@ class DbLogic
      */
     public function createTable($table_name, $data)
     {
+        $tableInfo = $this->getTable($table_name, 'TABLE_NAME');
+
+        if ($tableInfo) {
+            $this->errors[] = '表名已存在';
+            return false;
+        }
+
+        try {
+            Db::execute("CREATE TABLE IF NOT EXISTS `$table_name`(
+                `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+                PRIMARY KEY (`id`)
+                )ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='{$data['TABLE_COMMENT']}'");
+        } catch (\Exception $ex) {
+            Log::error($ex->__toString());
+            $this->errors[] = $ex->getMessage();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $table_name
+     * @return boolean
+     */
+    public function dropTable($table_name)
+    {
+        try {
+            Db::execute("DROP TABLE IF EXISTS `{$table_name}`");
+        } catch (\Exception $ex) {
+            Log::error($ex->__toString());
+            $this->errors[] = $ex->getMessage();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $table_name
+     * @return boolean
+     */
+    public function trashTable($table_name)
+    {
+        return $this->changeTableName($table_name, $table_name . '_del_at_' . time());
     }
 
     /**
@@ -107,6 +181,7 @@ class DbLogic
             Db::execute("ALTER TABLE `{$table_name}` COMMENT '{$comment}'");
         } catch (\Exception $ex) {
             Log::error($ex->__toString());
+            $this->errors[] = $ex->getMessage();
             return false;
         }
 
@@ -123,6 +198,7 @@ class DbLogic
             Db::execute("ALTER TABLE `{$table_name}` RENAME TO `{$new_name}`");
         } catch (\Exception $ex) {
             Log::error($ex->__toString());
+            $this->errors[] = $ex->getMessage();
             return false;
         }
 
