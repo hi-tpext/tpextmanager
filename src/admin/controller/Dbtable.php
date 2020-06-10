@@ -29,7 +29,7 @@ class Dbtable extends Controller
         $this->pagesize = 10;
         $this->pk = 'TABLE_NAME';
 
-        $this->database =  config('database.database');
+        $this->database = config('database.database');
 
         $this->dbLogic = new DbLogic;
     }
@@ -78,34 +78,34 @@ class Dbtable extends Controller
     {
         if (request()->isPost()) {
             return $this->save();
-        } else {
-            $builder = $this->builder($this->pageTitle, $this->addText);
-            $form = $builder->form();
-            $data = [];
-            $this->form = $form;
-            $this->builForm(false, $data);
-            $form->fill($data);
-            return $builder->render();
         }
+
+        $builder = $this->builder($this->pageTitle, $this->addText);
+        $form = $builder->form();
+        $data = [];
+        $this->form = $form;
+        $this->builForm(false, $data);
+        $form->fill($data);
+        return $builder->render();
     }
 
     public function edit($id)
     {
         if (request()->isPost()) {
             return $this->save($id);
-        } else {
-            $builder = $this->builder($this->pageTitle, $this->editText);
-            $data = $this->dbLogic->getTable($id);
-            if (!$data) {
-                return $builder->layer()->close(0, '数据不存在');
-            }
-            $form = $builder->form();
-            $this->form = $form;
-            $this->builForm(true, $data);
-            $form->fill($data);
-
-            return $builder->render();
         }
+
+        $builder = $this->builder($this->pageTitle, $this->editText);
+        $data = $this->dbLogic->getTable($id);
+        if (!$data) {
+            return $builder->layer()->close(0, '数据不存在');
+        }
+        $form = $builder->form();
+        $this->form = $form;
+        $this->builForm(true, $data);
+        $form->fill($data);
+
+        return $builder->render();
     }
 
     /**
@@ -118,7 +118,7 @@ class Dbtable extends Controller
     {
         $form = $this->form;
 
-        $form->text('TABLE_NAME', '表名')->required()->maxlength(50)->help($isEdit ? ' 若非必要，请不要随意修改' : '英文字母或数字组成');
+        $form->text('TABLE_NAME', '表名')->required()->maxlength(50)->help($isEdit ? ' 若非必要，请不要随意修改' : '英文字母或数字组成')->default(config('database.prefix'));
         $form->text('TABLE_COMMENT', '表注释')->required()->maxlength(50)->help('表的描述说明');
 
         if ($isEdit) {
@@ -131,6 +131,16 @@ class Dbtable extends Controller
             $form->show('TABLE_COLLATION', '排序规则');
             $form->show('ENGINE', '存储引擎');
             $form->show('CREATE_TIME', '创建时间');
+        } else {
+            $pkdata = [['id' => 'pk', 'COLUMN_NAME' => 'id', 'COLUMN_COMMENT' => '主键', 'DATA_TYPE' => 'int', 'LENGTH' => 10, 'ATTR' => 'auto_inc,unsigned', '__can_delete__' => 0]];
+            $form->items('PK_INFO', '主键')->dataWithId($pkdata)->canAdd(false)->size(2, 10)->cnaDelete(false)
+                ->with(
+                    $form->text('COLUMN_NAME', '字段名')->required(),
+                    $form->text('COLUMN_COMMENT', '注释')->required(),
+                    $form->select('DATA_TYPE', '类型')->options($this->dbLogic::$FIELD_TYPES)->required()->getWapper()->addStyle('width:160px;'),
+                    $form->text('LENGTH', '长度')->getWapper()->addStyle('width:100px;'),
+                    $form->checkbox('ATTR', '属性')->options(['auto_inc' => '自增', 'unsigned' => '非负'])->getWapper()->addStyle('width:160px;'),
+                );
         }
     }
 
@@ -145,6 +155,7 @@ class Dbtable extends Controller
         $data = request()->only([
             'TABLE_NAME',
             'TABLE_COMMENT',
+            'PK_INFO'
         ], 'post');
 
         $result = $this->validate($data, [
@@ -159,6 +170,7 @@ class Dbtable extends Controller
         if ($id) {
             $res = $this->dbLogic->updateTable($id, $data);
         } else {
+            \think\facade\Log::info($data);
             $res = $this->dbLogic->createTable($data['TABLE_NAME'], $data);
         }
         if (!$res) {
@@ -254,34 +266,89 @@ class Dbtable extends Controller
 
     public function fieldlist($name)
     {
+        if (request()->isPost()) {
+            return $this->savefields($name);
+        }
+
         $builder = $this->builder('字段管理', $name);
 
         $form = $builder->form();
 
-        
+        $fields = $this->dbLogic->getTFields($name, 'COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,COLUMN_COMMENT,IS_NULLABLE,NUMERIC_SCALE,NUMERIC_PRECISION,CHARACTER_MAXIMUM_LENGTH,DATA_TYPE');
 
-        $fields = $this->dbLogic->getTFields($name, 'COLUMN_NAME,COLUMN_DEFAULT,COLUMN_COMMENT,IS_NULLABLE,NUMERIC_SCALE,NUMERIC_PRECISION,CHARACTER_MAXIMUM_LENGTH,DATA_TYPE');
+        $keys = [];
 
         foreach ($fields as &$field) {
             $field['LENGTH'] = $field['CHARACTER_MAXIMUM_LENGTH'] ? $field['CHARACTER_MAXIMUM_LENGTH'] : $field['NUMERIC_PRECISION'];
+            if (strtolower($field['COLUMN_NAME']) == 'id') {
+                $field['__can_delete__'] = 0;
+            }
+
+            $keys = $this->dbLogic->getKeys($name, $field['COLUMN_NAME']);
+
+            $field['ATTR'] = '';
+
+            $ATTR = [];
+
+            if (strpos($field['COLUMN_TYPE'], 'unsigned')) {
+                $ATTR['unsigned'] = 'unsigned';
+            }
+
+            foreach ($keys as $key) {
+                if ($key['INDEX_NAME'] == 'PRIMARY') {
+                    $field['__can_delete__'] = 0;
+                    $ATTR['index'] = 'index';
+                    continue;
+                }
+
+                if ($key['NON_UNIQUE'] == 1) {
+                    $ATTR['index'] = 'index';
+                } else {
+                    $ATTR['unique'] = 'unique';
+                }
+            }
+
+            $field['ATTR'] = implode(',', $ATTR);
+            $field['DATA_TYPE'] = strtolower($field['DATA_TYPE']);
+
+            if ($field['COLUMN_DEFAULT'] == null || strtolower($field['COLUMN_DEFAULT']) == 'null') {
+                $field['COLUMN_DEFAULT'] == 'NULL';
+            } else {
+                $field['COLUMN_DEFAULT'] = trim($field['COLUMN_DEFAULT'], "'");
+            }
         }
 
-        echo json_encode($fields);
-
-        unset($field);
+        unset($keys, $field);
 
         $form->items('fields', ' ')->dataWithId($fields, 'COLUMN_NAME')->size(0, 12)
             ->with(
-                $form->text('COLUMN_NAME', '名称'),
-                $form->text('COLUMN_COMMENT', '注释'),
-                $form->text('DATA_TYPE', '数据类型'),
-                $form->text('LENGTH', '长度')->getWapper()->addStyle('width:100px;'),
-                $form->text('NUMERIC_SCALE', '小数点')->getWapper()->addStyle('width:100px;'),
-                $form->text('COLUMN_DEFAULT', '默认值'),
-                $form->select('IS_NULLABLE', '可空')->options(['NO' => '否', 'YES' => '是'])->getWapper()->addStyle('width:100px;'),
+                $form->text('COLUMN_NAME', '字段名')->required(),
+                $form->text('COLUMN_COMMENT', '字段注释')->required(),
+                $form->select('DATA_TYPE', '数据类型')->options($this->dbLogic::$FIELD_TYPES)->required()->default('varchar')->getWapper()->addStyle('width:160px;'),
+                $form->text('LENGTH', '长度')->default(0)->getWapper()->addStyle('width:100px;'),
+                $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWapper()->addStyle('width:100px;'),
+                $form->text('COLUMN_DEFAULT', '默认值')->default(''),
+                $form->radio('IS_NULLABLE', '可空')->required()->default('NO')->options(['NO' => '否', 'YES' => '是'])->getWapper()->addStyle('width:160px;'),
+                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWapper()->addStyle('width:220px;'),
             );
 
         return $builder->render();
+    }
+
+    private function savefields($name)
+    {
+        $postfields =  input('post.fields/a');
+
+        foreach ($postfields as $key => &$pfield) {
+            $pfield['ATTR'] = isset($pfield['ATTR']) ? $pfield['ATTR'] : [];
+            if (strpos($key, '__new__') !== false) {
+                $this->dbLogic->addField($name, $pfield);
+            } else {
+                $this->dbLogic->changeField($name, $key, $pfield);
+            }
+        }
+
+        return $this->builder()->layer()->closeRefresh(1, '保存成功');
     }
 
 

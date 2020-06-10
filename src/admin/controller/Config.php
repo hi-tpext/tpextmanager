@@ -396,7 +396,8 @@ EOT;
                 }
             } else if (strpos($key, '__br__') !== false) {
 
-                $field = $form->html($val)->getWapper()->style($val ? '' : 'visibility:hidden;height:1px;padding:0;margin:0;');
+                $field = $form->html($val);
+                $field->getWapper()->style($val ? '' : 'visibility:hidden;height:1px;padding:0;margin:0;');
             } else if (strpos($key, '__hr__') !== false) {
 
                 $field = $form->divider($val);
