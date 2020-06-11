@@ -229,9 +229,7 @@ class DbLogic
         try {
             if ($fieldName ==  $info['COLUMN_NAME']) {
                 Log::info("ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
-                Db::execute("ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
             } else {
-                Log::info("ALTER TABLE `{$tableName}` change `{$fieldName}` `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
                 Db::execute("ALTER TABLE `{$tableName}` change `{$fieldName}` `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
             }
 
@@ -255,6 +253,7 @@ class DbLogic
                     }
                     if ($key['NON_UNIQUE'] == 1) {
                         Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$key['INDEX_NAME']}`");
+                        break;
                     }
                 }
             }
@@ -276,6 +275,7 @@ class DbLogic
                     }
                     if ($key['NON_UNIQUE'] == 0) {
                         Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$key['INDEX_NAME']}`");
+                        break;
                     }
                 }
             }
