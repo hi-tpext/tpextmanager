@@ -253,23 +253,19 @@ class DbLogic
 
             if (in_array('index', $info['ATTR'])) {
                 if (!$primary && !$index_key) {
-                    Log::info(1);
                     Db::execute("ALTER TABLE `{$tableName}` add  INDEX `idx_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
                 }
             } else {
                 if ($index_key) {
-                    Log::info(2);
                     Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$index_key}`");
                 }
             }
             if (in_array('unique', $info['ATTR'])) {
                 if (!$unique_key) {
-                    Log::info(3);
                     Db::execute("ALTER TABLE `{$tableName}` add  UNIQUE `unq_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
                 }
             } else {
                 if ($unique_key) {
-                    Log::info(4);
                     Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$unique_key}`");
                 }
             }
