@@ -123,14 +123,19 @@ class Dbtable extends Controller
 
         if ($isEdit) {
 
-            $data['DATA_SIZE'] = $this->dbLogic->getDataSize($data);;
+            $data['DATA_SIZE'] = $this->dbLogic->getDataSize($data);
 
+            $form->tab('基本信息');
             $form->show('TABLE_ROWS', '记录条数');
             $form->show('AUTO_INCREMENT', '自增id');
             $form->show('DATA_SIZE', '数据大小')->to('{val}MB');
             $form->show('TABLE_COLLATION', '排序规则');
             $form->show('ENGINE', '存储引擎');
             $form->show('CREATE_TIME', '创建时间');
+
+            $form->tab('建表语句');
+            $tableInfo = Db::query("SHOW CREATE TABLE `{$data['TABLE_NAME']}`");
+            $form->raw('sql', ' ')->value(!empty($tableInfo) ? '<pre>' . $tableInfo[0]['Create Table'] . '</pre>' : '-')->size(0, 12);
         } else {
             $pkdata = [['id' => 'pk', 'COLUMN_NAME' => 'id', 'COLUMN_COMMENT' => '主键', 'DATA_TYPE' => 'int', 'LENGTH' => 10, 'ATTR' => 'auto_inc,unsigned', '__can_delete__' => 0]];
             $form->items('PK_INFO', '主键')->dataWithId($pkdata)->canAdd(false)->size(2, 10)->cnaDelete(false)
@@ -409,6 +414,13 @@ class Dbtable extends Controller
         $pagesize = $pagesize ?: 16;
 
         $data = Db::table($name)->order($sortOrder)->limit(($page - 1) * $pagesize, $pagesize)->select();
+
+        $fields = $this->dbLogic->getTFields($name, 'COLUMN_NAME,COLUMN_COMMENT');
+
+
+        foreach ($fields as $field) {
+            $table->show($field['COLUMN_NAME'],$field['COLUMN_COMMENT']);
+        }
 
         $table->fill($data);
 
