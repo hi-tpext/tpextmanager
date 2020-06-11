@@ -231,6 +231,7 @@ class DbLogic
         foreach ($keys as $key) {
             if (strtoupper($key['INDEX_NAME']) == 'PRIMARY') {
                 $info['ATTR'][] = 'primary';
+                $info['ATTR'][] = 'auto_inc';
                 $primary = $key['INDEX_NAME'];
                 continue;
             }

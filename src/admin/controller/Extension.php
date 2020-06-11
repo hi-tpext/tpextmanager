@@ -114,7 +114,7 @@ class Extension extends Controller
                 2 => '<label class="label label-success">资源</label>',
             ]);
         $table->show('tags', '分类');
-        $table->show('description', '介绍')->getWapper()->addStyle('width:40%;');
+        $table->show('description', '介绍')->getWrapper()->addStyle('width:40%;');
         $table->show('version', '版本号');
         $table->match('install', '安装')->options(
             [

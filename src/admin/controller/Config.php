@@ -337,10 +337,10 @@ EOT;
     {
         $table->show('id', 'ID');
         $table->show('key', '配置键');
-        $table->text('title', '名称')->autoPost()->getWapper()->addStyle('max-width:80px');
+        $table->text('title', '名称')->autoPost()->getWrapper()->addStyle('max-width:80px');
         $table->show('file', '路径');
-        $table->show('create_time', '添加时间')->getWapper()->addStyle('width:180px');
-        $table->show('update_time', '修改时间')->getWapper()->addStyle('width:180px');
+        $table->show('create_time', '添加时间')->getWrapper()->addStyle('width:180px');
+        $table->show('update_time', '修改时间')->getWrapper()->addStyle('width:180px');
 
         $table->getToolbar()
             ->btnAdd()
@@ -397,7 +397,7 @@ EOT;
             } else if (strpos($key, '__br__') !== false) {
 
                 $field = $form->html($val);
-                $field->getWapper()->style($val ? '' : 'visibility:hidden;height:1px;padding:0;margin:0;');
+                $field->getWrapper()->style($val ? '' : 'visibility:hidden;height:1px;padding:0;margin:0;');
             } else if (strpos($key, '__hr__') !== false) {
 
                 $field = $form->divider($val);

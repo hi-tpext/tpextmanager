@@ -137,9 +137,9 @@ class Dbtable extends Controller
                 ->with(
                     $form->text('COLUMN_NAME', '字段名')->required(),
                     $form->text('COLUMN_COMMENT', '注释')->required(),
-                    $form->select('DATA_TYPE', '类型')->options($this->dbLogic::$FIELD_TYPES)->required()->getWapper()->addStyle('width:160px;'),
-                    $form->text('LENGTH', '长度')->getWapper()->addStyle('width:100px;'),
-                    $form->checkbox('ATTR', '属性')->options(['auto_inc' => '自增', 'unsigned' => '非负'])->getWapper()->addStyle('width:160px;'),
+                    $form->select('DATA_TYPE', '类型')->options($this->dbLogic::$FIELD_TYPES)->required()->getWrapper()->addStyle('width:160px;'),
+                    $form->text('LENGTH', '长度')->getWrapper()->addStyle('width:100px;'),
+                    $form->checkbox('ATTR', '属性')->options(['auto_inc' => '自增', 'unsigned' => '非负'])->getWrapper()->addStyle('width:160px;'),
                 );
         }
     }
@@ -163,7 +163,7 @@ class Dbtable extends Controller
         }
 
         $result = $this->validate($data, [
-            'TABLE_NAME|表名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]+',
+            'TABLE_NAME|表名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]*',
             'TABLE_COMMENT|表注释' => 'require',
         ]);
 
@@ -194,14 +194,14 @@ class Dbtable extends Controller
     {
         $table = $this->table;
 
-        $table->text('TABLE_NAME', '表名')->autoPost('', true)->getWapper()->addStyle('width:260px');
-        $table->text('TABLE_COMMENT', '表注释')->autoPost('', true)->getWapper()->addStyle('width:260px');
+        $table->text('TABLE_NAME', '表名')->autoPost('', true)->getWrapper()->addStyle('width:260px');
+        $table->text('TABLE_COMMENT', '表注释')->autoPost('', true)->getWrapper()->addStyle('width:260px');
         $table->raw('TABLE_ROWS', '记录条数');
         $table->show('AUTO_INCREMENT', '自增id');
         $table->show('DATA_SIZE', '数据大小')->to('{val}MB');
         $table->show('TABLE_COLLATION', '排序规则');
         $table->show('ENGINE', '存储引擎');
-        $table->show('CREATE_TIME', '创建时间')->getWapper()->addStyle('width:160px');
+        $table->show('CREATE_TIME', '创建时间')->getWrapper()->addStyle('width:160px');
 
         foreach ($data as &$d) {
             $d['DATA_SIZE'] = $this->dbLogic->getDataSize($d);
@@ -333,12 +333,12 @@ class Dbtable extends Controller
             ->with(
                 $form->text('COLUMN_NAME', '字段名')->required(),
                 $form->text('COLUMN_COMMENT', '字段注释')->required(),
-                $form->select('DATA_TYPE', '数据类型')->options($this->dbLogic::$FIELD_TYPES)->required()->default('varchar')->getWapper()->addStyle('width:160px;'),
-                $form->text('LENGTH', '长度')->default(0)->getWapper()->addStyle('width:100px;'),
-                $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWapper()->addStyle('width:100px;'),
+                $form->select('DATA_TYPE', '数据类型')->options($this->dbLogic::$FIELD_TYPES)->required()->default('varchar')->getWrapper()->addStyle('width:160px;'),
+                $form->text('LENGTH', '长度')->default(0)->getWrapper()->addStyle('width:100px;'),
+                $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWrapper()->addStyle('width:100px;'),
                 $form->text('COLUMN_DEFAULT', '默认值')->default(''),
-                $form->switchBtn('IS_NULLABLE', '可空')->getWapper()->addStyle('width:100px;'),
-                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWapper()->addStyle('width:220px;'),
+                $form->switchBtn('IS_NULLABLE', '可空')->getWrapper()->addStyle('width:100px;'),
+                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:220px;'),
             );
 
         return $builder->render();
@@ -352,7 +352,7 @@ class Dbtable extends Controller
 
         foreach ($postfields as $key => &$pfield) {
             $result = $this->validate($pfield, [
-                'COLUMN_NAME|字段名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]+',
+                'COLUMN_NAME|字段名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]*',
                 'COLUMN_COMMENT|字段注释' => 'require',
                 'DATA_TYPE|字段注释' => 'require'
             ]);

@@ -68,10 +68,10 @@ class Attachment extends Controller
         $table->show('size', '大小')->to('{val}MB');
         $table->raw('url', '链接')->to('<a href="{val}" target="_blank">{val}</a>');
         $table->file('file', '文件');
-        $table->show('suffix', '后缀')->getWapper()->addStyle('width:80px');
+        $table->show('suffix', '后缀')->getWrapper()->addStyle('width:80px');
         $table->show('storage', '位置');
 
-        $table->show('create_time', '添加时间')->getWapper()->addStyle('width:160px');
+        $table->show('create_time', '添加时间')->getWrapper()->addStyle('width:160px');
 
         $table->getToolbar()
             ->btnRefresh()
