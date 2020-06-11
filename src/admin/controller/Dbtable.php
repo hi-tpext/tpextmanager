@@ -158,8 +158,12 @@ class Dbtable extends Controller
             'PK_INFO'
         ], 'post');
 
+        if (config('database.prefix') && strpos($data['TABLE_NAME'], config('database.prefix'))) {
+            $data['TABLE_NAME'] =  config('database.prefix') . $data['TABLE_NAME'];
+        }
+
         $result = $this->validate($data, [
-            'TABLE_NAME|表名' => 'require|regex:\w+',
+            'TABLE_NAME|表名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]+',
             'TABLE_COMMENT|表注释' => 'require',
         ]);
 
@@ -170,9 +174,10 @@ class Dbtable extends Controller
         if ($id) {
             $res = $this->dbLogic->updateTable($id, $data);
         } else {
-            \think\facade\Log::info($data);
+
             $res = $this->dbLogic->createTable($data['TABLE_NAME'], $data);
         }
+
         if (!$res) {
             $this->error('保存失败' . $this->dbLogic->getErrorsText());
         }
@@ -279,7 +284,10 @@ class Dbtable extends Controller
         $keys = [];
 
         foreach ($fields as &$field) {
-            $field['LENGTH'] = $field['CHARACTER_MAXIMUM_LENGTH'] ? $field['CHARACTER_MAXIMUM_LENGTH'] : $field['NUMERIC_PRECISION'];
+            if ($this->dbLogic->isInteger($field['DATA_TYPE']) || $this->dbLogic->isDecimal($field['DATA_TYPE']) || $this->dbLogic->isChartext($field['DATA_TYPE'])) {
+                $field['LENGTH'] = preg_replace('/^\w+\((\d+).+?$/', '$1', $field['COLUMN_TYPE']);
+            }
+
             if (strtolower($field['COLUMN_NAME']) == 'id') {
                 $field['__can_delete__'] = 0;
             }
@@ -295,7 +303,7 @@ class Dbtable extends Controller
             }
 
             foreach ($keys as $key) {
-                if ($key['INDEX_NAME'] == 'PRIMARY') {
+                if (strtoupper($key['INDEX_NAME']) == 'PRIMARY') {
                     $field['__can_delete__'] = 0;
                     $ATTR['index'] = 'index';
                     continue;
@@ -310,6 +318,7 @@ class Dbtable extends Controller
 
             $field['ATTR'] = implode(',', $ATTR);
             $field['DATA_TYPE'] = strtolower($field['DATA_TYPE']);
+            $field['IS_NULLABLE'] = $field['IS_NULLABLE'] == 'YES';
 
             if ($field['COLUMN_DEFAULT'] == null || strtolower($field['COLUMN_DEFAULT']) == 'null') {
                 $field['COLUMN_DEFAULT'] == 'NULL';
@@ -328,7 +337,7 @@ class Dbtable extends Controller
                 $form->text('LENGTH', '长度')->default(0)->getWapper()->addStyle('width:100px;'),
                 $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWapper()->addStyle('width:100px;'),
                 $form->text('COLUMN_DEFAULT', '默认值')->default(''),
-                $form->radio('IS_NULLABLE', '可空')->required()->default('NO')->options(['NO' => '否', 'YES' => '是'])->getWapper()->addStyle('width:160px;'),
+                $form->switchBtn('IS_NULLABLE', '可空')->getWapper()->addStyle('width:100px;'),
                 $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWapper()->addStyle('width:220px;'),
             );
 
@@ -339,16 +348,49 @@ class Dbtable extends Controller
     {
         $postfields =  input('post.fields/a');
 
+        $errors = [];
+
         foreach ($postfields as $key => &$pfield) {
+            $result = $this->validate($pfield, [
+                'COLUMN_NAME|字段名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]+',
+                'COLUMN_COMMENT|字段注释' => 'require',
+                'DATA_TYPE|字段注释' => 'require'
+            ]);
+
+            if (true !== $result) {
+                $errors[] = '[' . $pfield['COLUMN_NAME'] . ']' . $result;
+                continue;
+            }
+
+            //switch 关闭状态，无键值
+            if (!isset($pfield['IS_NULLABLE'])) {
+                $pfield['IS_NULLABLE'] = '0';
+            }
+
+            //checkbox 未选中任何一个时，无键值
             $pfield['ATTR'] = isset($pfield['ATTR']) ? $pfield['ATTR'] : [];
+
             if (strpos($key, '__new__') !== false) {
+
                 $this->dbLogic->addField($name, $pfield);
             } else {
+
+                if (isset($pfield['__del__']) && $pfield['__del__'] == 1) {
+                    $pfield['COLUMN_NAME'] .= '_del_at_' . time();
+                    $pfield['IS_NULLABLE'] = '1';
+                }
+
                 $this->dbLogic->changeField($name, $key, $pfield);
             }
         }
 
-        return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        $errors = array_merge($errors, $this->dbLogic->getErrors());
+
+        if (empty($errors)) {
+            return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        }
+
+        return $this->builder()->layer()->closeRefresh(0, implode('<br>', $errors));
     }
 
 

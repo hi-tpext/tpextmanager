@@ -159,8 +159,8 @@ class DbLogic
                 'LENGTH' => '10',
                 'ATTR' =>
                 [
-                    0 => 'auto_inc',
-                    1 => 'unsigned',
+                    'auto_inc',
+                    'unsigned',
                 ],
             ];
         }
@@ -168,9 +168,9 @@ class DbLogic
         $PK_INFO['IS_NULLABLE'] = 'NO';
         $PK_INFO['COLUMN_DEFAULT'] = '';
 
-        $attr = $this->buildFieldAttr($PK_INFO);
+        $PK_INFO['ATTR'][] = 'primary';
 
-        Log::info($attr);
+        $attr = $this->buildFieldAttr($PK_INFO);
 
         try {
             Db::execute("CREATE TABLE IF NOT EXISTS `$tableName`(
@@ -205,8 +205,6 @@ class DbLogic
             if (in_array('unique', $info['ATTR'])) {
                 Db::execute("ALTER TABLE `{$tableName}` add  UNIQUE `unq_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
             }
-
-            Log::info("ALTER TABLE `{$tableName}` add `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
         } catch (\Exception $ex) {
             Log::error($ex->__toString());
             $this->errors[] = $ex->getMessage();
@@ -224,59 +222,55 @@ class DbLogic
      */
     public function changeField($tableName, $fieldName, $info)
     {
+        $keys = $this->getKeys($tableName, $fieldName);
+
+        $primary = '';
+        $index_key = '';
+        $unique_key = '';
+
+        foreach ($keys as $key) {
+            if (strtoupper($key['INDEX_NAME']) == 'PRIMARY') {
+                $info['ATTR'][] = 'primary';
+                $primary = $key['INDEX_NAME'];
+                continue;
+            }
+            if ($key['NON_UNIQUE'] == 1) {
+                $index_key = $key['INDEX_NAME'];
+            } else {
+                $unique_key = $key['INDEX_NAME'];
+            }
+        }
+
         $attr = $this->buildFieldAttr($info);
 
         try {
+
             if ($fieldName ==  $info['COLUMN_NAME']) {
-                Log::info("ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
+                Db::execute("ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
             } else {
                 Db::execute("ALTER TABLE `{$tableName}` change `{$fieldName}` `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
             }
 
-            $keys = $this->getKeys($tableName, $fieldName);
-
             if (in_array('index', $info['ATTR'])) {
-                $has = 0;
-                foreach ($keys as $key) {
-                    if ($key['INDEX_NAME'] == 'PRIMARY' || $key['NON_UNIQUE'] == 1) {
-                        $has = 1;
-                        break;
-                    }
-                }
-                if (!$has) {
+                if (!$primary && !$index_key) {
+                    Log::info(1);
                     Db::execute("ALTER TABLE `{$tableName}` add  INDEX `idx_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
                 }
             } else {
-                foreach ($keys as $key) {
-                    if ($key['INDEX_NAME'] == 'PRIMARY') {
-                        continue;
-                    }
-                    if ($key['NON_UNIQUE'] == 1) {
-                        Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$key['INDEX_NAME']}`");
-                        break;
-                    }
+                if ($index_key) {
+                    Log::info(2);
+                    Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$index_key}`");
                 }
             }
             if (in_array('unique', $info['ATTR'])) {
-                $has = 0;
-                foreach ($keys as $key) {
-                    if ($key['NON_UNIQUE'] == 0) {
-                        $has = 1;
-                        break;
-                    }
-                }
-                if (!$has) {
+                if (!$unique_key) {
+                    Log::info(3);
                     Db::execute("ALTER TABLE `{$tableName}` add  UNIQUE `unq_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
                 }
             } else {
-                foreach ($keys as $key) {
-                    if ($key['INDEX_NAME'] == 'PRIMARY') {
-                        continue;
-                    }
-                    if ($key['NON_UNIQUE'] == 0) {
-                        Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$key['INDEX_NAME']}`");
-                        break;
-                    }
+                if ($unique_key) {
+                    Log::info(4);
+                    Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$unique_key}`");
                 }
             }
         } catch (\Exception $ex) {
@@ -303,7 +297,7 @@ class DbLogic
         $type = $info['DATA_TYPE'];
         $length = $info['LENGTH'];
         $unsigned = in_array('unsigned', $info['ATTR']) && ($isInteger || $isDecimal) ? 'unsigned' : '';
-        $not_null = $info['IS_NULLABLE'] == 'NO' ? 'NOT NULL' : '';
+        $not_null = $info['IS_NULLABLE'] == 1 ? '' : 'NOT NULL';
         $default = trim($info['COLUMN_DEFAULT'], "'");
         $auto_inc = $isInteger && $info['DATA_TYPE'] != 'boolean' && in_array('auto_inc', $info['ATTR']) ? 'AUTO_INCREMENT' : '';
 
@@ -336,15 +330,25 @@ class DbLogic
         }
 
         if ($info['DATA_TYPE'] == 'boolean') {
+
             $length = '(1)';
             $unsigned = 'unsigned';
+        } else if ($info['DATA_TYPE'] == 'year') {
+
+            $length = '(4)';
         }
 
-        if ($not_null && strtoupper($default) == 'NULL') {
-            $default = '';
+        if ($not_null) {
+            if (($isInteger || $isDecimal) && !is_numeric($default)) {
+                $default = '0';
+            }
+
+            if (strtoupper($default) == 'NULL') {
+                $default = '';
+            }
         }
 
-        if ($isText || strtoupper($default) == 'NULL') {
+        if (strtoupper($default) == 'NULL') {
 
             $default = 'DEFAULT NULL';
         } else if ($isDatetime) {
@@ -373,36 +377,13 @@ class DbLogic
             $default = "DEFAULT '{$default}'";
         }
 
+        if (in_array('primary', $info['ATTR']) || $auto_inc || $isText) {
+            $default = '';
+        }
+
         $attr = "{$type}{$length} {$unsigned} {$not_null} {$default} {$auto_inc}";
 
         return $attr;
-
-        //$text = "`{$name}` $attr COMMENT '{$comment}'";
-    }
-
-    public function isInteger($fieldType)
-    {
-        return in_array($fieldType, ['tinyint', 'smallint', 'mediumint', 'int', 'bigint', 'boolean']);
-    }
-
-    public function isDecimal($fieldType)
-    {
-        return in_array($fieldType, ['decimal', 'float', 'double']);
-    }
-
-    public function isDatetime($fieldType)
-    {
-        return in_array($fieldType, ['date', 'datetime', 'timestamp', 'time', 'year']);
-    }
-
-    public function isChartext($fieldType)
-    {
-        return in_array($fieldType, ['varchar', 'char']);
-    }
-
-    public function isText($fieldType)
-    {
-        return in_array($fieldType, ['tinytext', 'text', 'mediumtext', 'longtext']);
     }
 
     /**
@@ -480,6 +461,31 @@ class DbLogic
         }
 
         return true;
+    }
+
+    public function isInteger($fieldType)
+    {
+        return in_array($fieldType, ['tinyint', 'smallint', 'mediumint', 'int', 'bigint', 'boolean']);
+    }
+
+    public function isDecimal($fieldType)
+    {
+        return in_array($fieldType, ['decimal', 'float', 'double']);
+    }
+
+    public function isDatetime($fieldType)
+    {
+        return in_array($fieldType, ['date', 'datetime', 'timestamp', 'time', 'year']);
+    }
+
+    public function isChartext($fieldType)
+    {
+        return in_array($fieldType, ['varchar', 'char']);
+    }
+
+    public function isText($fieldType)
+    {
+        return in_array($fieldType, ['tinytext', 'text', 'mediumtext', 'longtext']);
     }
 
     public function getDataSize($data)
