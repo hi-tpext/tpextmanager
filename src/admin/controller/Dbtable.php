@@ -217,7 +217,10 @@ class Dbtable extends Controller
 
         $table->getToolbar()
             ->btnAdd()
-            ->btnRefresh();
+            ->btnRefresh()
+            ->btnToggleSearch()
+            ->html('<label style="margin-right:20px;" class="label label-default pull-right"><i class="mdi mdi-information-outline"></i>不建议在正式环境中使用这些功能</label>');
+
         $table->getActionbar()
             ->btnEdit()
             ->btnLink('fields', url('fieldlist', ['name' => '__data.pk__']), '', 'btn-success', 'mdi-format-list-bulleted-type', 'title="字段管理" data-layer-size="98%,98%"')
@@ -419,7 +422,7 @@ class Dbtable extends Controller
 
 
         foreach ($fields as $field) {
-            $table->show($field['COLUMN_NAME'],$field['COLUMN_COMMENT']);
+            $table->show($field['COLUMN_NAME'], $field['COLUMN_COMMENT']);
         }
 
         $table->fill($data);
