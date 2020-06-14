@@ -219,7 +219,7 @@ class Dbtable extends Controller
             ->btnAdd()
             ->btnRefresh()
             ->btnToggleSearch()
-            ->html('<label style="margin-right:20px;" class="label label-default pull-right"><i class="mdi mdi-information-outline"></i>不建议在正式环境中使用这些功能</label>');
+            ->html('<label class="m-r-10 label ' . (config('app_debug') ? 'label-default' : 'label-warning') . ' pull-right"><i class="mdi mdi-information-outline"></i>不建议在正式环境中使用这些功能</label>');
 
         $table->getActionbar()
             ->btnEdit()
