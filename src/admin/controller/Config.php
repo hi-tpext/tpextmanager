@@ -9,6 +9,10 @@ use tpext\builder\common\Table;
 use tpext\common\ExtLoader;
 use tpext\common\model\WebConfig;
 
+/**
+ * Undocumented class
+ * @title 平台设置
+ */
 class Config extends Controller
 {
     protected $extensions = [];
@@ -223,7 +227,7 @@ EOT;
         }
     }
 
-    public function extConfig($key = '')
+    public function edit($key = '')
     {
         if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');

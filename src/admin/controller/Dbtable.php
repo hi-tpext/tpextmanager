@@ -6,9 +6,12 @@ use think\Controller;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
 use tpext\manager\logic\DbLogic;
-
 use think\Db;
 
+/**
+ * Undocumented class
+ * @title 数据表管理
+ */
 class Dbtable extends Controller
 {
     use HasBase;
@@ -277,6 +280,12 @@ class Dbtable extends Controller
         }
     }
 
+    /**
+     * Undocumented function
+     *
+     * @title 字段管理
+     * @return mixed
+     */
     public function fieldlist($name)
     {
         if (request()->isPost()) {
@@ -401,7 +410,12 @@ class Dbtable extends Controller
         return $this->builder()->layer()->closeRefresh(0, implode('<br>', $errors));
     }
 
-
+    /**
+     * Undocumented function
+     *
+     * @title 查看数据
+     * @return mixed
+     */
     public function datalist($name)
     {
         $builder = $this->builder('查看数据', $name);

@@ -1,4 +1,5 @@
 <?php
+
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
@@ -9,6 +10,10 @@ use tpext\common\Module as BaseModule;
 use tpext\common\TpextCore;
 use tpext\manager\common\Module;
 
+/**
+ * Undocumented class
+ * @title 扩展管理
+ */
 class Extension extends Controller
 {
     protected $extensions = [];
@@ -112,7 +117,8 @@ class Extension extends Controller
             [
                 1 => '<label class="label label-info">模块</label>',
                 2 => '<label class="label label-success">资源</label>',
-            ]);
+            ]
+        );
         $table->show('tags', '分类');
         $table->show('description', '介绍')->getWrapper()->addStyle('width:40%;');
         $table->show('version', '版本号');
@@ -120,7 +126,8 @@ class Extension extends Controller
             [
                 0 => '<label class="label label-secondary">未安装</label>',
                 1 => '<label class="label label-success">已安装</label>',
-            ]);
+            ]
+        );
 
         $table->switchBtn('enable', '启用')->autoPost(url('enable'))
             ->mapClassWhen([0], 'hidden', 'install');
@@ -131,9 +138,16 @@ class Extension extends Controller
         $table->getActionbar()
             ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
             ->btnLink('uninstall', url('uninstall', ['key' => '__data.id__']), '', 'btn-danger', 'mdi-delete', 'title="卸载"')
-            ->btnLink('setting', url('config/extConfig', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置" data-layer-size="98%,98%"')
-            ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"'
-                , '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？')
+            ->btnLink('setting', url('/admin/config/edit', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置" data-layer-size="98%,98%"')
+            ->btnPostRowid(
+                'copyAssets',
+                url('copyAssets'),
+                '',
+                'btn-purple',
+                'mdi-redo',
+                'title="刷新资源"',
+                '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？'
+            )
             ->mapClass([
                 'install' => ['hidden' => '__h_in__'],
                 'uninstall' => ['hidden' => '__h_un__'],
@@ -201,7 +215,6 @@ class Extension extends Controller
             $this->detail($form, $instance, true);
             return $builder->render();
         }
-
     }
 
     public function uninstall($key = '')
@@ -320,6 +333,12 @@ class Extension extends Controller
         $form->ajax(false);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @title 刷新资源
+     * @return mixed
+     */
     public function copyAssets()
     {
         $ids = input('ids', '');
