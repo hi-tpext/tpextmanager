@@ -234,7 +234,8 @@ class Extension extends Controller
         $builder = Builder::getInstance('扩展管理', '卸载-' . $instance->getTitle());
 
         if (request()->isPost()) {
-            $res = $instance->uninstall();
+            $sql = input('post.sql/a', []);
+            $res = $instance->uninstall(!empty($sql));
             $errors = $instance->getErrors();
 
             if ($res) {
@@ -271,7 +272,10 @@ class Extension extends Controller
      */
     private function detail($form, $instance, $isInstall = true)
     {
-        $modules = $instance instanceof BaseModule ? $instance->getModules() : [];
+        $isModule = $instance instanceof BaseModule;
+        $modules = $isModule ? $instance->getModules() : [];
+        $menus = $isModule ? $instance->getMenus() : [];
+
         $bindModules = [];
         foreach ($modules as $module => $controlers) {
             foreach ($controlers as $controler) {
@@ -282,22 +286,26 @@ class Extension extends Controller
         $form->raw('name', '标识')->value($instance->getName());
         $form->raw('title', '标题')->value($instance->getTitle());
         $form->raw('tags', '类型')->value($instance->getTags());
-        $form->raw('modules', '提供模块')->value(!empty($bindModules) ? implode('<br>', $bindModules) : '无');
+        if ($isModule) {
+            $form->raw('modules', '提供模块')->value(!empty($bindModules) ? '<pre>' . implode("\n", $bindModules) . '</pre>' : '无');
+            $form->raw('menus', '提供菜单')->value(!empty($menus) ? '<pre>' . implode("\n", $this->menusTree($menus)) . '</pre>' : '无');
+        }
+
         $form->raw('desc', '介绍')->value($instance->getDescription());
         $form->raw('version', '版本号')->value($instance->getVersion());
 
         if ($isInstall) {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'install.sql')) {
-                $form->show('install', '安装脚本')->value('安装将运行SQL脚本');
+                $form->show('sql', '安装脚本')->value('安装将运行SQL脚本');
             } else {
-                $form->show('install', '安装脚本')->value('无');
+                $form->show('sql', '安装脚本')->value('无');
             }
             $form->btnSubmit('安&nbsp;&nbsp;装', 1, 'btn-success btn-loading');
             $form->html('', '', 3)->showLabel(false);
             $form->btnLayerClose();
         } else {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql')) {
-                $form->show('uninstall', '卸载脚本')->value('卸载将运行SQL脚本');
+                $form->checkbox('sql', '卸载脚本')->options([1 => '卸载将运行SQL脚本'])->value('1');
             } else {
                 $form->show('uninstall', '卸载脚本')->value('无');
             }
@@ -331,6 +339,34 @@ class Extension extends Controller
         $form->raw('LICENSE')->size(0, 12)->showLabel(false)->value($LICENSE);
 
         $form->ajax(false);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param array $meuns
+     * @return array
+     */
+    private function menusTree($meuns, $deep = 0)
+    {
+        $data = [];
+
+        $deep += 1;
+
+        foreach ($meuns as $menu) {
+
+            if ($deep == 1) {
+                $data[] = $menu['title'] . ' - ' . $menu['url'];
+            } else {
+                $data[] = str_repeat(' ', ($deep - 1) * 3) . '├─' . $menu['title'] . ' - ' . $menu['url'];
+            }
+
+            if (isset($menu['children']) && !empty($menu['children'])) {
+                $data = array_merge($data, $this->menusTree($menu['children'], $deep));
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -376,10 +412,7 @@ class Extension extends Controller
 
         if ($res) {
             $instance = $this->extensions[$id];
-
             $instance->enabled($value);
-
-            ExtLoader::getInstalled(true);
 
             $this->success(($value == 1 ? '启用' : '禁用') . '成功');
         } else {
