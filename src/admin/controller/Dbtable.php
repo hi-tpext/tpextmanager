@@ -138,7 +138,7 @@ class Dbtable extends Controller
 
             $form->tab('建表语句');
             $tableInfo = Db::query("SHOW CREATE TABLE `{$data['TABLE_NAME']}`");
-            $form->raw('sql', ' ')->value(!empty($tableInfo) ? '<pre>' . $tableInfo[0]['Create Table'] . '</pre>' : '-')->size(0, 12);
+            $form->raw('sql', ' ')->value(!empty($tableInfo) ? '<pre>' . $tableInfo[0]['Create Table'] . ';</pre>' : '-')->size(0, 12);
         } else {
             $pkdata = [['id' => 'pk', 'COLUMN_NAME' => 'id', 'COLUMN_COMMENT' => '主键', 'DATA_TYPE' => 'int', 'LENGTH' => 10, 'ATTR' => 'auto_inc,unsigned', '__can_delete__' => 0]];
             $form->items('PK_INFO', '主键')->dataWithId($pkdata)->canAdd(false)->size(2, 10)->cnaDelete(false)

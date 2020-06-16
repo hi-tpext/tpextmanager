@@ -10,9 +10,9 @@ class Module extends baseModule
 
     protected $name = 'tpext.manager';
 
-    protected $title = 'tpext扩展管理';
+    protected $title = 'tpext综合管理';
 
-    protected $description = '提供对扩展的管理[安装/卸载/资源刷新/配置]';
+    protected $description = '提供对扩展的管理[安装/卸载/资源刷新/配置]/数据库管理';
 
     protected $__root__ = __DIR__ . '/../../';
 
