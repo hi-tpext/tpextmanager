@@ -353,6 +353,8 @@ EOT;
             ->btnDelete();
         $table->sortable([]);
 
+        $table->hasExport(false);
+
         $data = $this->dataModel->order('key')->select();
 
         $table->data($data);

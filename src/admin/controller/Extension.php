@@ -4,6 +4,8 @@ namespace tpext\manager\admin\controller;
 
 use think\Controller;
 use tpext\builder\common\Builder;
+use tpext\builder\traits\actions\HasBase;
+use tpext\builder\traits\actions\HasIndex;
 use tpext\common\ExtLoader;
 use tpext\common\model\Extension as ExtensionModel;
 use tpext\common\Module as BaseModule;
@@ -16,12 +18,21 @@ use tpext\manager\common\Module;
  */
 class Extension extends Controller
 {
+    use HasBase;
+    use HasIndex;
     protected $extensions = [];
 
+    /**
+     * Undocumented variable
+     *
+     * @var ExtensionModel
+     */
     protected $dataModel;
 
     protected function initialize()
     {
+        $this->pageTitle = '扩展管理';
+
         ExtLoader::clearCache();
 
         $this->extensions = ExtLoader::getExtensions();
@@ -33,30 +44,30 @@ class Extension extends Controller
         $this->dataModel = new ExtensionModel;
     }
 
-    public function index()
+    protected function buildDataList()
     {
-        $builder = Builder::getInstance('扩展管理', '列表');
+        $page = input('post.__page__/d', 1);
+        $page = $page < 1 ? 1 : $page;
 
-        $table = $builder->table();
-
-        $page = input('__page__/d', 1);
-
-        if ($page < 1) {
+        if ($this->isExporting) {
             $page = 1;
+            $this->pagesize = PHP_INT_MAX;
         }
 
-        $pagesize = input('__pagesize__/d', 0);
+        $table = $this->table;
 
-        $pagesize = $pagesize ?: 14;
+        $pagesize = input('post.__pagesize__/d', 0);
 
-        $extensions = array_slice($this->extensions, ($page - 1) * $pagesize, $pagesize);
+        $this->pagesize = $pagesize ?: $this->pagesize;
+
+        $extensions = array_slice($this->extensions, ($page - 1) * $this->pagesize, $this->pagesize);
 
         $data = [];
 
         $installed = ExtLoader::getInstalled(true);
 
         if (empty($installed)) {
-            $builder->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
+            $this->builder()->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
         }
 
         if (!empty($installed)) {
@@ -111,6 +122,22 @@ class Extension extends Controller
             $k += 1;
         }
 
+        $this->buildTable($data);
+        $table->fill($data);
+        $table->paginator(count($this->extensions), $pagesize);
+
+        return $data;
+    }
+
+    /**
+     * 构建表格
+     *
+     * @return void
+     */
+    protected function buildTable(&$data = [])
+    {
+        $table = $this->table;
+
         $table->show('title', '标题');
         $table->show('name', '标识');
         $table->match('ext_type', '扩展类型')->options(
@@ -155,16 +182,7 @@ class Extension extends Controller
                 'copyAssets' => ['hidden' => '__h_cp__'],
             ]);
 
-        $table->data($data);
-
-        $table->paginator(count($this->extensions), $pagesize);
-
-        if (request()->isAjax()) {
-
-            return $table->partial()->render();
-        }
-
-        return $builder->render();
+        $table->useCheckbox(false);
     }
 
     public function install($key = '')
@@ -305,7 +323,10 @@ class Extension extends Controller
             $form->btnLayerClose();
         } else {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql')) {
-                $form->checkbox('sql', '卸载脚本')->options([1 => '卸载将运行SQL脚本'])->value('1');
+
+                $app_debug = config('app_debug');
+
+                $form->checkbox('sql', '卸载脚本')->options([1 => '卸载将运行SQL脚本'])->value($app_debug ? 1 : 0)->help($app_debug ? '<label class="label label-default">当前为调试模式</label>' : '<label class="label label-danger">当前为非调试模式，谨慎操作</label>');
             } else {
                 $form->show('uninstall', '卸载脚本')->value('无');
             }
@@ -316,6 +337,7 @@ class Extension extends Controller
 
         $form->tab('README.md');
         $README = '暂无';
+
         if (is_file($instance->getRoot() . 'README.md')) {
             $README = file_get_contents($instance->getRoot() . 'README.md');
         }
@@ -389,6 +411,8 @@ class Extension extends Controller
         $instance = $this->extensions[$ids[0]];
 
         $instance->copyAssets(true);
+
+        ExtLoader::trigger('tpext_copy_assets', $ids[0]);
 
         $this->success('刷新成功');
     }
