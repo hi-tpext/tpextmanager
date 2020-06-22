@@ -332,7 +332,6 @@ class DbLogic
         $isChartext = $this->isChartext($type);
         $isText = $this->isText($type);
 
-
         $length = $info['LENGTH'];
         $unsigned = in_array('unsigned', $info['ATTR']) && ($isInteger || $isDecimal) ? 'unsigned' : '';
         $not_null = $info['IS_NULLABLE'] == 1 ? '' : 'NOT NULL';
@@ -389,6 +388,10 @@ class DbLogic
 
             if (strtoupper($default) == 'NULL') {
                 $default = '';
+            }
+        } else {
+            if (!$isText && $default == '') {
+                $default = 'NULL';
             }
         }
 

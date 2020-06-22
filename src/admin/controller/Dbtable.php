@@ -3,10 +3,10 @@
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
+use think\Db;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
 use tpext\manager\logic\DbLogic;
-use think\Db;
 
 /**
  * Undocumented class
@@ -29,6 +29,11 @@ class Dbtable extends Controller
     protected function initialize()
     {
         $this->pageTitle = '数据表管理';
+
+        if (!config('app_debug')) {
+            $this->indexText = '不建议在[正式环境]中使用这些功能！';
+        }
+
         $this->pagesize = 10;
         $this->pk = 'TABLE_NAME';
 
@@ -41,7 +46,7 @@ class Dbtable extends Controller
     {
         $searchData = request()->post();
 
-        $where =  '';
+        $where = '';
 
         if (!empty($searchData['kwd'])) {
             $where .= " AND (`TABLE_NAME` LIKE '%{$searchData['kwd']}%' OR `TABLE_COMMENT` LIKE '%{$searchData['kwd']}%')";
@@ -163,11 +168,11 @@ class Dbtable extends Controller
         $data = request()->only([
             'TABLE_NAME',
             'TABLE_COMMENT',
-            'PK_INFO'
+            'PK_INFO',
         ], 'post');
 
         if (config('database.prefix') && strpos($data['TABLE_NAME'], config('database.prefix'))) {
-            $data['TABLE_NAME'] =  config('database.prefix') . $data['TABLE_NAME'];
+            $data['TABLE_NAME'] = config('database.prefix') . $data['TABLE_NAME'];
         }
 
         $result = $this->validate($data, [
@@ -221,8 +226,7 @@ class Dbtable extends Controller
         $table->getToolbar()
             ->btnAdd()
             ->btnRefresh()
-            ->btnToggleSearch()
-            ->html('<label class="m-r-10 label ' . (config('app_debug') ? 'label-default' : 'label-warning') . ' pull-right"><i class="mdi mdi-information-outline"></i>不建议在正式环境中使用这些功能</label>');
+            ->btnToggleSearch();
 
         $table->getActionbar()
             ->btnEdit()
@@ -245,9 +249,9 @@ class Dbtable extends Controller
         $res = 0;
 
         if ($name == 'TABLE_COMMENT') {
-            $res =  $this->dbLogic->changeComment($id, $value);
+            $res = $this->dbLogic->changeComment($id, $value);
         } else if ($name == 'TABLE_NAME') {
-            $res =  $this->dbLogic->changeTableName($id, $value);
+            $res = $this->dbLogic->changeTableName($id, $value);
         }
 
         if ($res) {
@@ -363,7 +367,7 @@ class Dbtable extends Controller
 
     private function savefields($name)
     {
-        $postfields =  input('post.fields/a');
+        $postfields = input('post.fields/a');
 
         $errors = [];
 
@@ -371,7 +375,7 @@ class Dbtable extends Controller
             $result = $this->validate($pfield, [
                 'COLUMN_NAME|字段名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]*',
                 'COLUMN_COMMENT|字段注释' => 'require',
-                'DATA_TYPE|字段注释' => 'require'
+                'DATA_TYPE|字段注释' => 'require',
             ]);
 
             if (true !== $result) {
@@ -433,7 +437,6 @@ class Dbtable extends Controller
         $data = Db::table($name)->order($sortOrder)->limit(($page - 1) * $pagesize, $pagesize)->select();
 
         $fields = $this->dbLogic->getTFields($name, 'COLUMN_NAME,COLUMN_COMMENT');
-
 
         foreach ($fields as $field) {
             $table->show($field['COLUMN_NAME'], $field['COLUMN_COMMENT']);
