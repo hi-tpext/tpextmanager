@@ -124,7 +124,7 @@ class Extension extends Controller
 
         $this->buildTable($data);
         $table->fill($data);
-        $table->paginator(count($this->extensions), $pagesize);
+        $table->paginator(count($this->extensions), $this->pagesize);
 
         return $data;
     }
