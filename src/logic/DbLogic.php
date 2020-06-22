@@ -36,7 +36,7 @@ class DbLogic
 
     public function __construct()
     {
-        $this->database =  config('database.database');
+        $this->database = config('database.database');
     }
 
     /**
@@ -46,12 +46,12 @@ class DbLogic
      */
     public function getErrors()
     {
-        return  $this->errors;
+        return $this->errors;
     }
 
     public function getErrorsText()
     {
-        return  implode('<br>', $this->errors);
+        return implode('<br>', $this->errors);
     }
 
     /**
@@ -171,12 +171,13 @@ class DbLogic
         $PK_INFO['ATTR'][] = 'primary';
 
         $attr = $this->buildFieldAttr($PK_INFO);
-
+        $sql = "CREATE TABLE IF NOT EXISTS `$tableName`(
+            `id` {$attr} primary key COMMENT '{$PK_INFO['COLUMN_COMMENT']}'
+            )ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='{$data['TABLE_COMMENT']}'";
         try {
-            Db::execute("CREATE TABLE IF NOT EXISTS `$tableName`(
-                `id` {$attr} primary key COMMENT '{$PK_INFO['COLUMN_COMMENT']}'
-                )ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='{$data['TABLE_COMMENT']}'");
+            Db::execute($sql);
         } catch (\Exception $ex) {
+            Log::info($sql);
             Log::error($ex->__toString());
             $this->errors[] = $ex->getMessage();
             return false;
@@ -194,18 +195,36 @@ class DbLogic
      */
     public function addField($tableName, $info)
     {
+        if (($this->isInteger($info['DATA_TYPE']) || $this->isDecimal($info['DATA_TYPE'])) && !in_array('unsigned', $info['ATTR'])) {
+            $info['ATTR'][] = 'unsigned';
+        }
+
         $attr = $this->buildFieldAttr($info);
 
+        $sqls = [];
+        $sql = '';
+
         try {
-            Db::execute("ALTER TABLE `{$tableName}` add `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
+            $sql = "ALTER TABLE `{$tableName}` add `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'";
+            $sqls[] = $sql;
+            Db::execute($sql);
 
             if (in_array('index', $info['ATTR'])) {
-                Db::execute("ALTER TABLE `{$tableName}` add  INDEX `idx_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
+                $sql = "ALTER TABLE `{$tableName}` add  INDEX `idx_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)";
+                $sqls[] = $sql;
+                Db::execute($sql);
             }
             if (in_array('unique', $info['ATTR'])) {
-                Db::execute("ALTER TABLE `{$tableName}` add  UNIQUE `unq_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
+                $sql = "ALTER TABLE `{$tableName}` add  UNIQUE `unq_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)";
+                $sqls[] = $sql;
+                Db::execute($sql);
             }
         } catch (\Exception $ex) {
+
+            foreach ($sqls as $s) {
+                Log::info($s);
+            }
+
             Log::error($ex->__toString());
             $this->errors[] = $ex->getMessage();
             return false;
@@ -244,33 +263,53 @@ class DbLogic
 
         $attr = $this->buildFieldAttr($info);
 
+        $sqls = [];
+        $sql = '';
+
         try {
 
-            if ($fieldName ==  $info['COLUMN_NAME']) {
-                Db::execute("ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
+            if ($fieldName == $info['COLUMN_NAME']) {
+                $sql = "ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'";
+                $sqls[] = $sql;
+                Db::execute($sql);
             } else {
-                Db::execute("ALTER TABLE `{$tableName}` change `{$fieldName}` `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'");
+                $sql = "ALTER TABLE `{$tableName}` change `{$fieldName}` `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'";
+                $sqls[] = $sql;
+                Db::execute($sql);
             }
 
             if (in_array('index', $info['ATTR'])) {
                 if (!$primary && !$index_key) {
-                    Db::execute("ALTER TABLE `{$tableName}` add  INDEX `idx_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
+                    $sql = "ALTER TABLE `{$tableName}` add  INDEX `idx_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)";
+                    $sqls[] = $sql;
+                    Db::execute($sql);
                 }
             } else {
                 if ($index_key) {
-                    Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$index_key}`");
+                    $sql = "ALTER TABLE `{$tableName}` drop  INDEX `{$index_key}`";
+                    $sqls[] = $sql;
+                    Db::execute($sql);
                 }
             }
             if (in_array('unique', $info['ATTR'])) {
                 if (!$unique_key) {
-                    Db::execute("ALTER TABLE `{$tableName}` add  UNIQUE `unq_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)");
+                    $sql = "ALTER TABLE `{$tableName}` add  UNIQUE `unq_{$info['COLUMN_NAME']}` (`{$info['COLUMN_NAME']}`)";
+                    $sqls[] = $sql;
+                    Db::execute($sql);
                 }
             } else {
                 if ($unique_key) {
-                    Db::execute("ALTER TABLE `{$tableName}` drop  INDEX `{$unique_key}`");
+                    $sql = "ALTER TABLE `{$tableName}` drop  INDEX `{$unique_key}`";
+                    $sqls[] = $sql;
+                    Db::execute($sql);
                 }
             }
         } catch (\Exception $ex) {
+
+            foreach ($sqls as $s) {
+                Log::info($s);
+            }
+
             Log::error($ex->__toString());
             $this->errors[] = $ex->getMessage();
             return false;
@@ -285,18 +324,20 @@ class DbLogic
      */
     public function buildFieldAttr($info)
     {
-        $isInteger = $this->isInteger($info['DATA_TYPE']);
-        $isDecimal = $this->isDecimal($info['DATA_TYPE']);
-        $isDatetime = $this->isDatetime($info['DATA_TYPE']);
-        $isChartext = $this->isChartext($info['DATA_TYPE']);
-        $isText = $this->isText($info['DATA_TYPE']);
-
         $type = $info['DATA_TYPE'];
+
+        $isInteger = $this->isInteger($type);
+        $isDecimal = $this->isDecimal($type);
+        $isDatetime = $this->isDatetime($type);
+        $isChartext = $this->isChartext($type);
+        $isText = $this->isText($type);
+
+
         $length = $info['LENGTH'];
         $unsigned = in_array('unsigned', $info['ATTR']) && ($isInteger || $isDecimal) ? 'unsigned' : '';
         $not_null = $info['IS_NULLABLE'] == 1 ? '' : 'NOT NULL';
         $default = trim($info['COLUMN_DEFAULT'], "'");
-        $auto_inc = $isInteger && $info['DATA_TYPE'] != 'boolean' && in_array('auto_inc', $info['ATTR']) ? 'AUTO_INCREMENT' : '';
+        $auto_inc = $isInteger && $type != 'boolean' && in_array('auto_inc', $info['ATTR']) ? 'AUTO_INCREMENT' : '';
 
         if (empty($length) || !is_numeric($length)) {
             if ($isInteger) {
@@ -307,7 +348,7 @@ class DbLogic
                     'int' => 10,
                     'bigint' => 20,
                 ];
-                $length = isset($Length[$info['DATA_TYPE']]) ?  $Length[$info['DATA_TYPE']] : 10;
+                $length = isset($Length[$type]) ? $Length[$type] : 10;
             } else if ($isDecimal) {
                 $length = 10;
             } else if ($isChartext) {
@@ -326,18 +367,24 @@ class DbLogic
             $length = '';
         }
 
-        if ($info['DATA_TYPE'] == 'boolean') {
-
+        if ($type == 'boolean') {
+            $type = 'tinyint';
             $length = '(1)';
             $unsigned = 'unsigned';
-        } else if ($info['DATA_TYPE'] == 'year') {
+        } else if ($type == 'year') {
 
             $length = '(4)';
         }
 
         if ($not_null) {
-            if (($isInteger || $isDecimal) && !is_numeric($default)) {
-                $default = '0';
+            if ($isInteger || $isDecimal) {
+                if (!is_numeric($default)) {
+                    $default = '0';
+                }
+            } else if ($isDatetime) {
+                if (empty($default)) {
+                    $default = 'CURRENT_TIMESTAMP';
+                }
             }
 
             if (strtoupper($default) == 'NULL') {
@@ -349,18 +396,22 @@ class DbLogic
 
             $default = 'DEFAULT NULL';
         } else if ($isDatetime) {
-
-            if ($info['DATA_TYPE'] == 'year') {
-                $default = is_numeric($default) && $default >= 0 ? $default : 2020;
-            } else if ($info['DATA_TYPE'] == 'date') {
-                $default = date('Y-m-d', strtotime($default));
-            } else if ($info['DATA_TYPE'] == 'time') {
-                $default = date('H:i:s', strtotime($default));
+            if ((strtoupper($default) == 'CURRENT_TIMESTAMP' || strtoupper($default) == 'CURRENT_TIMESTAMP()')) {
+                $default = "DEFAULT CURRENT_TIMESTAMP";
             } else {
-                $default = date('Y-m-d H:i:s', strtotime($default));
+                if ($type == 'year') {
+                    $default = is_numeric($default) && $default >= 0 ? $default : date('Y');
+                } else if ($type == 'date') {
+                    $default = date('Y-m-d', strtotime($default));
+                } else if ($type == 'time') {
+                    $default = date('H:i:s', strtotime($default));
+                } else {
+                    $default = date('Y-m-d H:i:s', strtotime(date('Y-m-d') . ' ' . $default));
+                }
+
+                $default = "DEFAULT '{$default}'";
             }
 
-            $default = "DEFAULT '{$default}'";
         } else if ($isInteger || $isDecimal) {
 
             if ($unsigned) {
@@ -391,9 +442,12 @@ class DbLogic
      */
     public function dropTable($tableName)
     {
+        $sql = "DROP TABLE IF EXISTS `{$tableName}`";
+
         try {
-            Db::execute("DROP TABLE IF EXISTS `{$tableName}`");
+            Db::execute($sql);
         } catch (\Exception $ex) {
+            Log::info($sql);
             Log::error($ex->__toString());
             $this->errors[] = $ex->getMessage();
             return false;
@@ -432,9 +486,12 @@ class DbLogic
             return false;
         }
 
+        $sql = "ALTER TABLE `{$tableName}` COMMENT '{$comment}'";
+
         try {
-            Db::execute("ALTER TABLE `{$tableName}` COMMENT '{$comment}'");
+            Db::execute($sql);
         } catch (\Exception $ex) {
+            Log::info($sql);
             Log::error($ex->__toString());
             $this->errors[] = $ex->getMessage();
             return false;
@@ -449,9 +506,12 @@ class DbLogic
             return false;
         }
 
+        $sql = "ALTER TABLE `{$tableName}` RENAME TO `{$new_name}`";
+
         try {
-            Db::execute("ALTER TABLE `{$tableName}` RENAME TO `{$new_name}`");
+            Db::execute($sql);
         } catch (\Exception $ex) {
+            Log::info($sql);
             Log::error($ex->__toString());
             $this->errors[] = $ex->getMessage();
             return false;

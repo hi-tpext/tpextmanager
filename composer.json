@@ -15,7 +15,6 @@
     ],
     "require": {
         "topthink/framework": "5.1.*",
-        "ichynul/tpextbuilder": "^1.1.1",
         "ichynul/builder-mdeditor": "^1.1.1"
     },
     "autoload": {
