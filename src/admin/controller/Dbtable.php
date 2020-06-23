@@ -183,7 +183,6 @@ class Dbtable extends Controller
         $result = $this->validate($data, [
             'TABLE_NAME|表名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]*',
             'TABLE_COMMENT|表注释' => 'require',
-            'fields|字段信息' => 'require|array',
         ]);
 
         if (true !== $result) {
