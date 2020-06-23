@@ -145,8 +145,12 @@ class Dbtable extends Controller
             $tableInfo = Db::query("SHOW CREATE TABLE `{$data['TABLE_NAME']}`");
             $form->raw('sql', ' ')->value(!empty($tableInfo) ? '<pre>' . $tableInfo[0]['Create Table'] . ';</pre>' : '-')->size(0, 12);
         } else {
-            $pkdata = [['id' => 'pk', 'COLUMN_NAME' => 'id', 'COLUMN_COMMENT' => '主键', 'DATA_TYPE' => 'int', 'LENGTH' => 10, 'ATTR' => 'auto_inc,unsigned', '__can_delete__' => 0]];
-            $form->items('PK_INFO', '主键')->dataWithId($pkdata)->canAdd(false)->size(2, 10)->cnaDelete(false)
+            $pkdata = [
+                ['id' => 'pk', 'COLUMN_NAME' => 'id', 'COLUMN_COMMENT' => '主键', 'DATA_TYPE' => 'int', 'LENGTH' => 10, 'ATTR' => 'auto_inc,unsigned', '__can_delete__' => 0],
+                ['id' => 'create_time', 'COLUMN_NAME' => 'create_time', 'COLUMN_COMMENT' => '添加时间', 'DATA_TYPE' => 'datetime', 'LENGTH' => 0, 'ATTR' => '', '__can_delete__' => 1],
+                ['id' => 'update_time', 'COLUMN_NAME' => 'update_time', 'COLUMN_COMMENT' => '更新时间', 'DATA_TYPE' => 'datetime', 'LENGTH' => 0, 'ATTR' => '', '__can_delete__' => 1]
+            ];
+            $form->items('PK_AND_TIMES', '主键和时间')->dataWithId($pkdata)->canAdd(false)->size(2, 10)
                 ->with(
                     $form->text('COLUMN_NAME', '字段名')->required(),
                     $form->text('COLUMN_COMMENT', '注释')->required(),
@@ -168,7 +172,7 @@ class Dbtable extends Controller
         $data = request()->only([
             'TABLE_NAME',
             'TABLE_COMMENT',
-            'PK_INFO',
+            'PK_AND_TIMES',
         ], 'post');
 
         if (config('database.prefix') && strpos($data['TABLE_NAME'], config('database.prefix'))) {
@@ -178,6 +182,7 @@ class Dbtable extends Controller
         $result = $this->validate($data, [
             'TABLE_NAME|表名' => 'require|regex:[a-zA-Z_][a-zA-Z_\d]*',
             'TABLE_COMMENT|表注释' => 'require',
+            'PK_AND_TIMES|主键和时间' => 'require|array',
         ]);
 
         if (true !== $result) {

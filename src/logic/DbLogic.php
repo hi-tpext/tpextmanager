@@ -150,9 +150,12 @@ class DbLogic
             return false;
         }
 
-        $PK_INFO = isset($data['PK_INFO']) ? $data['PK_INFO']['pk'] : [];
-        if (empty($PK_INFO)) {
-            $PK_INFO = [
+        $pkinfo = isset($data['PK_AND_TIMES']) ? $data['PK_AND_TIMES']['pk'] : [];
+        $create_time = isset($data['PK_AND_TIMES']) ? $data['PK_AND_TIMES']['create_time'] : [];
+        $update_time = isset($data['PK_AND_TIMES']) ? $data['PK_AND_TIMES']['update_time'] : [];
+
+        if (empty($pkinfo)) {
+            $pkinfo = [
                 'COLUMN_NAME' => 'id',
                 'COLUMN_COMMENT' => '主键',
                 'DATA_TYPE' => 'int',
@@ -165,14 +168,31 @@ class DbLogic
             ];
         }
 
-        $PK_INFO['IS_NULLABLE'] = 'NO';
-        $PK_INFO['COLUMN_DEFAULT'] = '';
+        $pkinfo['IS_NULLABLE'] = 'NO';
+        $pkinfo['COLUMN_DEFAULT'] = '';
+        $pkinfo['ATTR'][] = 'primary';
+        $attr = $this->buildFieldAttr($pkinfo);
 
-        $PK_INFO['ATTR'][] = 'primary';
+        $create_time_column = '';
+        $update_time_column = '';
+        if (!empty($create_time)) {
+            if (!isset($create_time['__del__']) || $create_time['__del__'] == 0) {
+                $create_time_attr = $this->buildFieldAttr($create_time);
+                $create_time_column = ",
+                `{$create_time['COLUMN_NAME']}` {$create_time_attr} COMMENT '{$create_time['COLUMN_COMMENT']}'";
+            }
+        }
 
-        $attr = $this->buildFieldAttr($PK_INFO);
+        if (!empty($update_time)) {
+            if (!isset($update_time['__del__']) || $update_time['__del__'] == 0) {
+                $update_time_attr = $this->buildFieldAttr($update_time);
+                $update_time_column = ",
+                `{$update_time['COLUMN_NAME']}` {$update_time_attr} COMMENT '{$update_time['COLUMN_COMMENT']}'";
+            }
+        }
+
         $sql = "CREATE TABLE IF NOT EXISTS `$tableName`(
-            `id` {$attr} primary key COMMENT '{$PK_INFO['COLUMN_COMMENT']}'
+            `{$pkinfo['COLUMN_NAME']}` {$attr} primary key COMMENT '{$pkinfo['COLUMN_COMMENT']}'{$create_time_column}{$update_time_column}
             )ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='{$data['TABLE_COMMENT']}'";
         try {
             Db::execute($sql);
@@ -324,6 +344,26 @@ class DbLogic
      */
     public function buildFieldAttr($info)
     {
+        if (!isset($info['ATTR'])) {
+            $info['ATTR'] = [];
+        }
+
+        if (!isset($info['IS_NULLABLE'])) {
+            $info['IS_NULLABLE'] = 0;
+        }
+
+        if (!isset($info['COLUMN_DEFAULT'])) {
+            $info['COLUMN_DEFAULT'] = '';
+        }
+
+        if (!isset($info['LENGTH'])) {
+            $info['LENGTH'] = '';
+        }
+
+        if (!isset($info['NUMERIC_SCALE'])) {
+            $info['NUMERIC_SCALE'] = '';
+        }
+
         $type = $info['DATA_TYPE'];
 
         $isInteger = $this->isInteger($type);
@@ -407,9 +447,9 @@ class DbLogic
                 } else if ($type == 'date') {
                     $default = date('Y-m-d', strtotime($default));
                 } else if ($type == 'time') {
-                    $default = date('H:i:s', strtotime($default));
+                    $default = date('H:i:s', strtotime(date('Y-m-d') . ' ' . $default));
                 } else {
-                    $default = date('Y-m-d H:i:s', strtotime(date('Y-m-d') . ' ' . $default));
+                    $default = date('Y-m-d H:i:s', strtotime($default));
                 }
 
                 $default = "DEFAULT '{$default}'";
