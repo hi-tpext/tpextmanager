@@ -444,7 +444,7 @@ class Dbtable extends Controller
         $fields = $this->dbLogic->getTFields($name, 'COLUMN_NAME,COLUMN_COMMENT');
 
         foreach ($fields as $field) {
-            $table->show($field['COLUMN_NAME'], $field['COLUMN_COMMENT']);
+            $table->show($field['COLUMN_NAME'], $field['COLUMN_COMMENT'])->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
         }
 
         $table->fill($data);
