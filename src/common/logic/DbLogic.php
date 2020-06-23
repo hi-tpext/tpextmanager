@@ -1,6 +1,6 @@
 <?php
 
-namespace tpext\manager\logic;
+namespace tpext\manager\common\logic;
 
 use think\Db;
 use \think\facade\Log;

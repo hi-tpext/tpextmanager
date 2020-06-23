@@ -6,7 +6,7 @@ use think\Controller;
 use think\Db;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
-use tpext\manager\logic\DbLogic;
+use tpext\manager\common\logic\DbLogic;
 
 /**
  * Undocumented class
