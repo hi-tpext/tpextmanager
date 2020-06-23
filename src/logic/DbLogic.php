@@ -150,9 +150,9 @@ class DbLogic
             return false;
         }
 
-        $pkinfo = isset($data['PK_AND_TIMES']) ? $data['PK_AND_TIMES']['pk'] : [];
-        $create_time = isset($data['PK_AND_TIMES']) ? $data['PK_AND_TIMES']['create_time'] : [];
-        $update_time = isset($data['PK_AND_TIMES']) ? $data['PK_AND_TIMES']['update_time'] : [];
+        $pkinfo = isset($data['fields']) ? $data['fields']['pk'] : [];
+        $create_time = isset($data['fields']) ? $data['fields']['create_time'] : [];
+        $update_time = isset($data['fields']) ? $data['fields']['update_time'] : [];
 
         if (empty($pkinfo)) {
             $pkinfo = [
@@ -175,6 +175,7 @@ class DbLogic
 
         $create_time_column = '';
         $update_time_column = '';
+
         if (!empty($create_time)) {
             if (!isset($create_time['__del__']) || $create_time['__del__'] == 0) {
                 $create_time_attr = $this->buildFieldAttr($create_time);
