@@ -300,15 +300,11 @@ class Extension extends Controller
                 $bindModules[] = '/' . $module . '/' . $controler . '/*';
             }
         }
+
         $form->tab('基本信息');
         $form->raw('name', '标识')->value($instance->getName());
         $form->raw('title', '标题')->value($instance->getTitle());
         $form->raw('tags', '类型')->value($instance->getTags());
-        if ($isModule) {
-            $form->raw('modules', '提供模块')->value(!empty($bindModules) ? '<pre>' . implode("\n", $bindModules) . '</pre>' : '无');
-            $form->raw('menus', '提供菜单')->value(!empty($menus) ? '<pre>' . implode("\n", $this->menusTree($menus)) . '</pre>' : '无');
-        }
-
         $form->raw('desc', '介绍')->value($instance->getDescription());
         $form->raw('version', '版本号')->value($instance->getVersion());
 
@@ -333,6 +329,14 @@ class Extension extends Controller
             $form->btnSubmit('卸&nbsp;&nbsp;载', 1, 'btn-danger btn-loading');
             $form->html('', '', 3)->showLabel(false);
             $form->btnLayerClose();
+        }
+
+
+
+        if ($isModule) {
+            $form->tab('模块&菜单');
+            $form->raw('modules', '提供模块')->value(!empty($bindModules) ? '<pre>' . implode("\n", $bindModules) . '</pre>' : '无');
+            $form->raw('menus', '提供菜单')->value(!empty($menus) ? '<pre>' . implode("\n", $this->menusTree($menus)) . '</pre>' : '无');
         }
 
         $form->tab('README.md');

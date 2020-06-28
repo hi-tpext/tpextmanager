@@ -17,6 +17,11 @@ class Config extends Controller
 {
     protected $extensions = [];
 
+    /**
+     * Undocumented variable
+     *
+     * @var WebConfig
+     */
     protected $dataModel;
 
     protected function initialize()
@@ -443,11 +448,11 @@ EOT;
         $this->dataModel::clearCache($config_key);
 
         if ($this->dataModel->where(['key' => $config_key])->find()) {
-            return $this->dataModel->update(['config' => json_encode($values)], ['key' => $config_key]);
+            return $this->dataModel->save(['config' => json_encode($values)], ['key' => $config_key]);
         }
 
         $filePath = str_replace(app()->getRootPath(), '', $filePath);
 
-        return $this->dataModel->create(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values)]);
+        return $this->dataModel->save(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values)]);
     }
 }
