@@ -423,7 +423,7 @@ class DbLogic
                 }
             } else if ($isDatetime) {
                 if (empty($default)) {
-                    $default = 'CURRENT_TIMESTAMP';
+                    $default = date('Y-m-d', 0);
                 }
             }
 
