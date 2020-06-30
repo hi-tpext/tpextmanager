@@ -430,10 +430,6 @@ class DbLogic
             if (strtoupper($default) == 'NULL') {
                 $default = '';
             }
-        } else {
-            if (!$isText && $default == '') {
-                $default = 'NULL';
-            }
         }
 
         if (strtoupper($default) == 'NULL') {
