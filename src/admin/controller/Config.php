@@ -76,7 +76,10 @@ class Config extends Controller
             $extensionsKeys = [];
             foreach ($this->extensions as $key => $instance) {
                 $is_install = 0;
-                $has_config = !empty($instance->defaultConfig());
+
+                $default = $instance->defaultConfig();
+
+                $has_config = !empty($default);
 
                 foreach ($installed as $ins) {
                     if ($ins['key'] == $key) {
@@ -89,12 +92,6 @@ class Config extends Controller
                 $extensionsKeys[] = $config_key;
 
                 if (!$is_install || !$has_config) {
-                    continue;
-                }
-
-                $default = $instance->defaultConfig();
-
-                if (empty($default)) {
                     continue;
                 }
 
@@ -135,6 +132,7 @@ class Config extends Controller
                 $form->formId('the-from' . $oth['key']);
                 $form->hidden('config_key')->value($oth['key']);
                 $this->buildConfig($form, $default, $saved);
+                $form->html('', '配置键')->value("<pre>" . $oth['key'] . "</pre>")->size(2, 8);
             }
 
             $table = $tab->table('更多设置', $confkey == '__config_list__');
@@ -217,8 +215,8 @@ class Config extends Controller
                     'isRandName' => ['type' => 'radio', 'label' => '随机文件名', 'options' => [0 => '否', 1 => '是'], 'col_size' => 6, 'size' => [3, 8]],
                 ], //支持【tpext-builder】表单元素 ，不是太复杂的大多能满足。配置的值尽量为常规类型，如果是数组则会转换成json。
             ];
-            //使用 \\tpext\admin\model\WebConfig::config('myconfig');//不支持config('myconfig');
-            </code>
+            //使用 \\tpext\\common\\model\\WebConfig::config('myconfig');//不支持config('myconfig');
+            </pre>
 EOT;
             $builder = Builder::getInstance('配置管理', '添加');
             $form = $builder->form();
@@ -394,13 +392,30 @@ EOT;
                 $required = isset($type['required']) ? $type['required'] : false;
                 $colSize = isset($type['col_size']) && is_numeric($type['col_size']) ? $type['col_size'] : 12;
                 $size = isset($type['size']) && is_array($type['size']) && count($type['size']) == 2 ? $type['size'] : [2, 8];
+                $befor = isset($type['befor']) ? $type['befor'] : '';
+                $after = isset($type['after']) ? $type['after'] : '';
+                $beforSymbol = isset($type['befor_symbol']) ? $type['befor_symbol'] : '';
+                $afterSymbol = isset($type['after_symbol']) ? $type['after_symbol'] : '';
 
-                $field = $form->$fieldType($key, $label, $colSize)->required($required)->default($val)->help($help)->size($size[0], $size[1]);
+                $field = $form->$fieldType($key, $label, $colSize)->required($required)->help($help)->size($size[0], $size[1]);
 
                 if (in_array($fieldType, ['divider', 'show', 'raw', 'html', 'items', 'fields', 'button', 'match', 'matches'])) {
+                    $field->value($default[$key]);
                     continue;
                 }
-
+                $field->default($val);
+                if ($befor) {
+                    $field->befor($befor);
+                }
+                if ($after) {
+                    $field->after($after);
+                }
+                if ($beforSymbol) {
+                    $field->beforSymbol($beforSymbol);
+                }
+                if ($afterSymbol) {
+                    $field->afterSymbol($afterSymbol);
+                }
                 if (in_array($fieldType, ['radio', 'select', 'checkbox', 'multipleSelect'])) {
 
                     $field->options(isset($type['options']) ? $type['options'] : [0 => '为什么没有选项？', 1 => '？项选有没么什为']);
