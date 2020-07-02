@@ -113,10 +113,8 @@ class Extension extends Controller
                 '__h_cp__' => empty($instance->getAssets()),
             ];
 
-            if ($key == Module::class || $key == TpextCore::class) {
-                $data[$k]['__h_un__'] = 0;
-                $data[$k]['__h_st__'] = 1;
-                $data[$k]['__h_cp__'] = 1;
+            if ($key == Module::class) {
+                $data[$k]['__h_un__'] = 1;
             }
 
             $k += 1;
