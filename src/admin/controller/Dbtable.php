@@ -346,8 +346,8 @@ class Dbtable extends Controller
             $field['DATA_TYPE'] = strtolower($field['DATA_TYPE']);
             $field['IS_NULLABLE'] = $field['IS_NULLABLE'] == 'YES';
 
-            if ($field['COLUMN_DEFAULT'] == null || strtolower($field['COLUMN_DEFAULT']) == 'null') {
-                $field['COLUMN_DEFAULT'] == 'NULL';
+            if (is_null($field['COLUMN_DEFAULT'])) {
+                $field['COLUMN_DEFAULT'] = 'NULL';
             } else {
                 $field['COLUMN_DEFAULT'] = trim($field['COLUMN_DEFAULT'], "'");
             }
