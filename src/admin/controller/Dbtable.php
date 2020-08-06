@@ -60,7 +60,7 @@ class Dbtable extends Controller
      *
      * @return void
      */
-    protected function builSearch()
+    protected function buildSearch()
     {
         $search = $this->search;
 
@@ -92,7 +92,7 @@ class Dbtable extends Controller
         $form = $builder->form();
         $data = [];
         $this->form = $form;
-        $this->builForm(false, $data);
+        $this->buildForm(false, $data);
         $form->fill($data);
         return $builder->render();
     }
@@ -110,7 +110,7 @@ class Dbtable extends Controller
         }
         $form = $builder->form();
         $this->form = $form;
-        $this->builForm(true, $data);
+        $this->buildForm(true, $data);
         $form->fill($data);
 
         return $builder->render();
@@ -122,7 +122,7 @@ class Dbtable extends Controller
      * @param boolean $isEdit
      * @param array $data
      */
-    protected function builForm($isEdit, &$data = [])
+    protected function buildForm($isEdit, &$data = [])
     {
         $form = $this->form;
 
