@@ -72,22 +72,75 @@ class DbLogic
     /**
      * Undocumented function
      *
+     * @param string $where
+     * @param string $sortOrder
+     * @return array
+     */
+    public function getDeletedTables($where = '', $sortOrder = 'TABLE_NAME ASC')
+    {
+        $tables = Db::query("select TABLE_NAME,TABLE_COMMENT from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
+
+        return $tables;
+    }
+
+    /**
+     * Undocumented function
+     *
      * @param string $tableName
      * @param string $columns
      * @return array|null
      */
-    public function getTable($tableName, $columns = '*')
+    public function getTableInfo($tableName, $columns = '*')
     {
-        $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` NOT LIKE '%_del_at_%' AND `TABLE_NAME`='{$tableName}'");
+        $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME`='{$tableName}'");
 
         return count($tables) ? $tables[0] : null;
     }
 
-    public function getTFields($tableName, $columns = '*', $where = '', $sortOrder = 'ORDINAL_POSITION ASC')
+    /**
+     * Undocumented function
+     *
+     * @param string $tableName
+     * @param string $columns
+     * @param string $where
+     * @param string $sortOrder
+     * @return array
+     */
+    public function getFields($tableName, $columns = '*', $where = '', $sortOrder = 'ORDINAL_POSITION ASC')
     {
-        $tables = Db::query("select {$columns} from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
+        $fields = Db::query("select {$columns} from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
-        return $tables;
+        return $fields;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @param string $columns
+     * @return array
+     */
+    public function getFieldInfo($tableName, $fieldName, $columns = '*')
+    {
+        $fields = Db::query("select {$columns} from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME`='{$fieldName}'");
+
+        return count($fields) ? $fields[0] : null;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $tableName
+     * @param string $where
+     * @param string $sortOrder
+     * @return array
+     */
+    public function getDeletedFields($tableName, $where = '', $sortOrder = 'ORDINAL_POSITION ASC')
+    {
+        $fields = Db::query("select COLUMN_NAME,COLUMN_COMMENT from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME` LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
+
+        return $fields;
     }
 
     /**
@@ -112,7 +165,7 @@ class DbLogic
      */
     public function updateTable($tableName, $data)
     {
-        $tableInfo = $this->getTable($tableName, 'TABLE_NAME,TABLE_COMMENT');
+        $tableInfo = $this->getTableInfo($tableName, 'TABLE_NAME,TABLE_COMMENT');
 
         if (!$tableInfo) {
             $this->errors[] = '表不存在';
@@ -143,7 +196,7 @@ class DbLogic
      */
     public function createTable($tableName, $data)
     {
-        $tableInfo = $this->getTable($tableName, 'TABLE_NAME');
+        $tableInfo = $this->getTableInfo($tableName, 'TABLE_NAME');
 
         if ($tableInfo) {
             $this->errors[] = '表名已存在';
@@ -325,6 +378,9 @@ class DbLogic
                     Db::execute($sql);
                 }
             }
+
+            return true;
+
         } catch (\Exception $ex) {
 
             foreach ($sqls as $s) {
@@ -430,6 +486,12 @@ class DbLogic
             if (strtoupper($default) == 'NULL') {
                 $default = '';
             }
+        } else {
+            if ($info['COLUMN_NAME'] == 'delete_time') {
+                $default = 'NULL';
+            } else if ($isDatetime && empty($default)) {
+                $default = 'NULL';
+            }
         }
 
         if (strtoupper($default) == 'NULL') {
@@ -482,7 +544,30 @@ class DbLogic
      */
     public function dropTable($tableName)
     {
-        $sql = "DROP TABLE IF EXISTS `{$tableName}`";
+        $sql = "DROP TABLE IF EXISTS `{$tableName}`;";
+
+        try {
+            Db::execute($sql);
+        } catch (\Exception $ex) {
+            Log::info($sql);
+            Log::error($ex->__toString());
+            $this->errors[] = $ex->getMessage();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @return boolean
+     */
+    public function dropField($tableName, $fieldName)
+    {
+        $sql = "ALTER TABLE `{$tableName}` drop COLUMN `{$fieldName}`;";
 
         try {
             Db::execute($sql);
@@ -511,12 +596,65 @@ class DbLogic
      * Undocumented function
      *
      * @param string $tableName
+     * @return boolean
+     */
+    public function recoveryTable($tableName)
+    {
+        $arr = explode('_del_at_', $tableName);
+        return $this->changeTableName($tableName, $arr[0]);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $tableName
+     * @param string $fieldName
+     * @return boolean
+     */
+    public function recoveryField($tableName, $fieldName)
+    {
+        $arr = explode('_del_at_', $fieldName);
+
+        $field = $this->getFieldInfo($tableName, $fieldName);
+
+        if (!$field) {
+            return false;
+        }
+
+        $ATTR = [];
+        if (strpos($field['COLUMN_TYPE'], 'unsigned')) {
+            $ATTR['unsigned'] = 'unsigned';
+        }
+        $keys = $this->getKeys($tableName, $fieldName);
+        foreach ($keys as $key) {
+            if (strtoupper($key['INDEX_NAME']) == 'PRIMARY') {
+                $ATTR['index'] = 'index';
+                continue;
+            }
+
+            if ($key['NON_UNIQUE'] == 1) {
+                $ATTR['index'] = 'index';
+            } else {
+                $ATTR['unique'] = 'unique';
+            }
+        }
+
+        $field['COLUMN_NAME'] = $arr[0];
+        $field['ATTR'] = $ATTR;
+
+        return $this->changeField($tableName, $fieldName, $field);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $tableName
      * @param string $comment
      * @return boolean
      */
     public function changeComment($tableName, $comment)
     {
-        $tableInfo = $this->getTable($tableName, 'TABLE_COMMENT');
+        $tableInfo = $this->getTableInfo($tableName, 'TABLE_COMMENT');
 
         if (!$tableInfo) {
             return false;

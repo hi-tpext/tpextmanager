@@ -104,7 +104,7 @@ class Dbtable extends Controller
         }
 
         $builder = $this->builder($this->pageTitle, $this->editText);
-        $data = $this->dbLogic->getTable($id);
+        $data = $this->dbLogic->getTableInfo($id);
         if (!$data) {
             return $builder->layer()->close(0, '数据不存在');
         }
@@ -231,7 +231,8 @@ class Dbtable extends Controller
         $table->getToolbar()
             ->btnAdd()
             ->btnRefresh()
-            ->btnToggleSearch();
+            ->btnToggleSearch()
+            ->btnLink(url('trash'), '回收站', 'btn-danger', 'mdi-delete-variant');
 
         $table->getActionbar()
             ->btnEdit()
@@ -239,6 +240,147 @@ class Dbtable extends Controller
             ->btnDelete();
 
         $table->useCheckbox(false);
+    }
+
+    /**
+     * Undocumented function
+     * @title 回收站
+     *
+     * @return mixed
+     */
+    public function trash()
+    {
+        $builder = $this->builder('回收站', '');
+
+        $table = $builder->table();
+
+        $table->match('type', '类型')->options(['table' => '表', 'field' => '字段'])->mapClassWhenGroup([['table', 'success'], ['field', 'info']]);
+        $table->raw('name', '名称');
+        $table->show('comment', '注释');
+        $table->show('delete_time', '删除时间')->getWrapper()->addStyle('width:180px');
+        $table->raw('table_data', '数据')->getWrapper()->addStyle('width:180px');
+
+        $data = [];
+
+        $deletedTables = $this->dbLogic->getDeletedTables();
+
+        foreach ($deletedTables as $dtable) {
+            $arr = explode('_del_at_', $dtable['TABLE_NAME']);
+            $data[] = [
+                'id' => $dtable['TABLE_NAME'],
+                'name' => $dtable['TABLE_NAME'],
+                'comment' => $dtable['TABLE_COMMENT'],
+                'type' => 'table',
+                'delete_time' => date('Y-m-d H:i:s', $arr[1]),
+                'table_data' => '<a target="_blank" title="查看数据" href="' . url('datalist', ['name' => $dtable['TABLE_NAME']]) . '">查看</a>',
+            ];
+        }
+
+        unset($dtable);
+
+        $deletedTables = $this->dbLogic->getTables();
+
+        foreach ($deletedTables as $dtable) {
+            $deletedFields = $this->dbLogic->getDeletedFields($dtable['TABLE_NAME']);
+
+            foreach ($deletedFields as $field) {
+                $arr = explode('_del_at_', $field['COLUMN_NAME']);
+                $data[] = [
+                    'id' => $dtable['TABLE_NAME'] . '.' . $field['COLUMN_NAME'],
+                    'name' => $dtable['TABLE_NAME'] . '<i style="color:green;">@</i>' . $field['COLUMN_NAME'],
+                    'comment' => $field['COLUMN_COMMENT'],
+                    'type' => 'field',
+                    'delete_time' => date('Y-m-d H:i:s', $arr[1]),
+                    'table_data' => '<a target="_blank" title="查看数据" href="' . url('datalist', ['name' => $dtable['TABLE_NAME'], 'show_field' => $field['COLUMN_NAME']]) . '">查看</a>',
+                ];
+            }
+        }
+
+        $table->fill($data);
+
+        $table->getActionbar()
+            ->btnDelete(url('destroy'), '删除', 'btn-danger', 'mdi-delete', 'title="彻底删除表或字段"', '删除后数据不可恢复，确定要执行此操作吗？')
+            ->btnPostRowid('recovery', url('recovery'), '恢复', 'btn-success', 'mdi-backup-restore', 'title="恢复表或字段"');
+
+        $table->useCheckbox(false);
+        $table->useToolbar(false);
+
+        if (request()->isAjax()) {
+            return $table->partial()->render();
+        }
+
+        return $builder->render();
+    }
+
+    /**
+     * Undocumented function
+     * @title 恢复已删除的表或字段
+     *
+     * @return mixed
+     */
+    public function recovery()
+    {
+        $ids = input('post.ids', '');
+        $ids = array_filter(explode(',', $ids), 'strlen');
+
+        if (empty($ids)) {
+            $this->error('参数有误');
+        }
+
+        $res = 0;
+        foreach ($ids as $id) {
+            if (strpos($id, '.') !== false) {
+                $arr = explode('.', $id);
+                if ($this->dbLogic->recoveryField($arr[0], $arr[1])) {
+                    $res += 1;
+                }
+            } else {
+                if ($this->dbLogic->recoveryTable($id)) {
+                    $res += 1;
+                }
+            }
+        }
+
+        if ($res) {
+            $this->success('成功恢复' . $res . '条数据', '', ['script' => '<script>parent.$(".search-refresh").trigger("click");</script>']);
+        } else {
+            $this->error('恢复失败' . $this->dbLogic->getErrorsText());
+        }
+    }
+
+    /**
+     * Undocumented function
+     * @title 彻底删除表或字段
+     * @return mixed
+     */
+    public function destroy()
+    {
+        $ids = input('post.ids', '');
+        $ids = array_filter(explode(',', $ids), 'strlen');
+
+        if (empty($ids)) {
+            $this->error('参数有误');
+        }
+
+        $res = 0;
+        foreach ($ids as $id) {
+            if (strpos($id, '.') !== false) {
+                $arr = explode('.', $id);
+                if ($this->dbLogic->dropField($arr[0], $arr[1])) {
+                    $res += 1;
+                }
+            } else {
+                if ($this->dbLogic->dropTable($id)) {
+                    $res += 1;
+                }
+            }
+        }
+
+        if ($res) {
+            $this->success('成功删除' . $res . '条数据');
+        } else {
+            $this->error('删除失败' . $this->dbLogic->getErrorsText());
+        }
     }
 
     public function autopost()
@@ -305,7 +447,7 @@ class Dbtable extends Controller
 
         $form = $builder->form();
 
-        $fields = $this->dbLogic->getTFields($name, 'COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,COLUMN_COMMENT,IS_NULLABLE,NUMERIC_SCALE,NUMERIC_PRECISION,CHARACTER_MAXIMUM_LENGTH,DATA_TYPE');
+        $fields = $this->dbLogic->getFields($name, 'COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,COLUMN_COMMENT,IS_NULLABLE,NUMERIC_SCALE,NUMERIC_PRECISION,CHARACTER_MAXIMUM_LENGTH,DATA_TYPE');
 
         $keys = [];
 
@@ -427,9 +569,13 @@ class Dbtable extends Controller
      */
     public function datalist($name)
     {
-        $builder = $this->builder('查看数据', $name);
+        $tableInfo = $this->dbLogic->getTableInfo($name);
+
+        $builder = $this->builder('查看数据', $name . '[' . $tableInfo['TABLE_COMMENT'] . ']');
 
         $table = $builder->table();
+
+        $show_field = input('show_field', '');
 
         $page = input('__page__/d', 1);
         $page = $page < 1 ? 1 : $page;
@@ -441,10 +587,19 @@ class Dbtable extends Controller
 
         $data = Db::table($name)->order($sortOrder)->limit(($page - 1) * $pagesize, $pagesize)->select();
 
-        $fields = $this->dbLogic->getTFields($name, 'COLUMN_NAME,COLUMN_COMMENT');
+        $fields = $this->dbLogic->getFields($name, 'COLUMN_NAME,COLUMN_COMMENT');
+
+        $deletedFields = $this->dbLogic->getDeletedFields($name);
 
         foreach ($fields as $field) {
-            $table->show($field['COLUMN_NAME'], $field['COLUMN_COMMENT'])->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+            $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+        }
+
+        unset($field);
+
+        foreach ($deletedFields as $field) {
+            $table->show($field['COLUMN_NAME'], ($field['COLUMN_NAME'] == $show_field ? '<i style="color:red;">=></i>' : '') . $field['COLUMN_NAME'] . '<label class="label label-danger">[已删除]</label>' . '<br>' . $field['COLUMN_COMMENT'])
+                ->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
         }
 
         $table->fill($data);
