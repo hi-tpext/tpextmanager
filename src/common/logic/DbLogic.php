@@ -641,6 +641,7 @@ class DbLogic
 
         $field['COLUMN_NAME'] = $arr[0];
         $field['ATTR'] = $ATTR;
+        $field['IS_NULLABLE'] = 1;
 
         return $this->changeField($tableName, $fieldName, $field);
     }
