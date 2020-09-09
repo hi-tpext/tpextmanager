@@ -14,6 +14,7 @@
         }
     ],
     "require": {
+        "ichynul/builder-mdeditor": "^1.1.1"
     },
     "autoload": {
         "psr-4": {
