@@ -2,12 +2,14 @@
 
 namespace tpext\manager\common\logic;
 
-use think\Db;
+use think\facade\Db;
 use \think\facade\Log;
 
 class DbLogic
 {
     protected $database = '';
+
+    protected $prefix = '';
 
     protected $errors = [];
 
@@ -34,9 +36,52 @@ class DbLogic
         'longtext' => 'longtext',
     ];
 
+    protected $config = [];
+
     public function __construct()
     {
-        $this->database = config('database.database');
+        $type = Db::getConfig('default', 'mysql');
+
+        $connections = Db::getConfig('connections');
+
+        $this->config = $connections[$type] ?? [];
+
+        if (empty($this->config) || empty($this->config['database'])) {
+            return;
+        }
+
+        $this->database = $this->config['database'];
+        $this->prefix = $this->config['prefix'];
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return string
+     */
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return string
+     */
+    public function getDatabase()
+    {
+        return $this->database;
     }
 
     /**

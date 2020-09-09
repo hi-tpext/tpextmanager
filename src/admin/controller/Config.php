@@ -462,12 +462,12 @@ EOT;
         }
         $this->dataModel::clearCache($config_key);
 
-        if ($this->dataModel->where(['key' => $config_key])->find()) {
-            return $this->dataModel->save(['config' => json_encode($values)], ['key' => $config_key]);
+        if ($exist = $this->dataModel->where(['key' => $config_key])->find()) {
+            return $exist->force()->save(['config' => json_encode($values)]);
         }
 
         $filePath = str_replace(app()->getRootPath(), '', $filePath);
 
-        return $this->dataModel->save(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values)]);
+        return $this->dataModel->exists(false)->save(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values)]);
     }
 }

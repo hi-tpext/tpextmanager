@@ -3,7 +3,7 @@
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
-use think\Db;
+use think\facade\Db;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
 use tpext\manager\common\logic\DbLogic;
@@ -126,7 +126,7 @@ class Dbtable extends Controller
     {
         $form = $this->form;
 
-        $form->text('TABLE_NAME', '表名')->required()->maxlength(50)->help($isEdit ? ' 若非必要，请不要随意修改' : '英文字母或数字组成')->default(config('database.prefix'));
+        $form->text('TABLE_NAME', '表名')->required()->maxlength(50)->help($isEdit ? ' 若非必要，请不要随意修改' : '英文字母或数字组成')->default($this->dbLogic->getPrefix());
         $form->text('TABLE_COMMENT', '表注释')->required()->maxlength(50)->help('表的描述说明');
 
         if ($isEdit) {
@@ -176,8 +176,8 @@ class Dbtable extends Controller
             'fields',
         ], 'post');
 
-        if (config('database.prefix') && strpos($data['TABLE_NAME'], config('database.prefix'))) {
-            $data['TABLE_NAME'] = config('database.prefix') . $data['TABLE_NAME'];
+        if ($this->dbLogic->getPrefix() && strpos($data['TABLE_NAME'], $this->dbLogic->getPrefix())) {
+            $data['TABLE_NAME'] = $this->dbLogic->getPrefix() . $data['TABLE_NAME'];
         }
 
         $result = $this->validate($data, [
