@@ -579,7 +579,10 @@ class Dbtable extends Controller
 
         $page = input('__page__/d', 1);
         $page = $page < 1 ? 1 : $page;
-        $sortOrder = input('__sort__', Db::table($name)->getPk() . ' desc');
+
+        $pk = Db::table($name)->getPk();
+
+        $sortOrder = input('__sort__', !empty($pk) && is_string($pk) ? $pk . ' desc' : '');
 
         $pagesize = input('__pagesize__/d', 0);
 
