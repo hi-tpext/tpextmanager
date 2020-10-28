@@ -34,7 +34,6 @@ class Dbtable extends Controller
             $this->indexText = '不建议在[正式环境]中使用这些功能！';
         }
 
-        $this->pagesize = 10;
         $this->pk = 'TABLE_NAME';
 
         $this->database = config('database.database');
@@ -157,7 +156,7 @@ class Dbtable extends Controller
                     $form->text('COLUMN_COMMENT', '注释')->required(),
                     $form->select('DATA_TYPE', '类型')->options($this->dbLogic::$FIELD_TYPES)->required()->getWrapper()->addStyle('width:160px;'),
                     $form->text('LENGTH', '长度')->getWrapper()->addStyle('width:100px;'),
-                    $form->checkbox('ATTR', '属性')->options(['auto_inc' => '自增', 'unsigned' => '非负'])->getWrapper()->addStyle('width:160px;'),
+                    $form->checkbox('ATTR', '属性')->options(['auto_inc' => '自增', 'unsigned' => '非负'])->getWrapper()->addStyle('width:160px;')
                 );
         }
     }
@@ -240,6 +239,7 @@ class Dbtable extends Controller
             ->btnDelete();
 
         $table->useCheckbox(false);
+        $table->sortable('TABLE_NAME,TABLE_ROWS,CREATE_TIME,TABLE_COLLATION,AUTO_INCREMENT,AVG_ROW_LENGTH,INDEX_LENGTH');
     }
 
     /**
@@ -506,7 +506,7 @@ class Dbtable extends Controller
                 $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWrapper()->addStyle('width:100px;'),
                 $form->text('COLUMN_DEFAULT', '默认值')->default(''),
                 $form->switchBtn('IS_NULLABLE', '可空')->getWrapper()->addStyle('width:100px;'),
-                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:220px;'),
+                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:220px;')
             );
 
         return $builder->render();
@@ -594,15 +594,20 @@ class Dbtable extends Controller
 
         $deletedFields = $this->dbLogic->getDeletedFields($name);
 
+        $fieldNames = [];
+
         foreach ($fields as $field) {
+            $fieldNames[] = $field['COLUMN_NAME'];
+
             $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
         }
 
         unset($field);
 
         foreach ($deletedFields as $field) {
+
             $table->show($field['COLUMN_NAME'], ($field['COLUMN_NAME'] == $show_field ? '<i style="color:red;">=></i>' : '') . $field['COLUMN_NAME'] . '<label class="label label-danger">[已删除]</label>' . '<br>' . $field['COLUMN_COMMENT'])
-                ->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+                ->addStyle('overflow:auto;margin:auto auto;');
         }
 
         $table->fill($data);
@@ -616,6 +621,8 @@ class Dbtable extends Controller
         $table->useCheckbox(false);
 
         $table->useToolbar(false);
+
+        $table->sortable($fieldNames);
 
         if (request()->isAjax()) {
             return $table->partial()->render();
