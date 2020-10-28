@@ -599,15 +599,14 @@ class Dbtable extends Controller
         foreach ($fields as $field) {
             $fieldNames[] = $field['COLUMN_NAME'];
 
-            $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+            $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
         }
 
         unset($field);
 
         foreach ($deletedFields as $field) {
-
             $table->show($field['COLUMN_NAME'], ($field['COLUMN_NAME'] == $show_field ? '<i style="color:red;">=></i>' : '') . $field['COLUMN_NAME'] . '<label class="label label-danger">[已删除]</label>' . '<br>' . $field['COLUMN_COMMENT'])
-                ->addStyle('overflow:auto;margin:auto auto;');
+                ->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
         }
 
         $table->fill($data);
@@ -616,7 +615,10 @@ class Dbtable extends Controller
 
         $table->sortOrder($sortOrder);
 
-        $table->useActionbar(false);
+        if (!empty($pk) && is_string($pk)) {
+            $table->getActionbar()
+                ->btnView(url('dataview', ['name' => $name, 'id' => "__data.{$pk}__", 'pk' => $pk]));
+        }
 
         $table->useCheckbox(false);
 
@@ -627,6 +629,36 @@ class Dbtable extends Controller
         if (request()->isAjax()) {
             return $table->partial()->render();
         }
+
+        return $builder->render();
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @title 查看数据-详情
+     * @return mixed
+     */
+    public function dataview($name, $id, $pk)
+    {
+        $tableInfo = $this->dbLogic->getTableInfo($name);
+
+        $builder = $this->builder('查看数据', $name . '[' . $tableInfo['TABLE_COMMENT'] . ']');
+
+        $form = $builder->form();
+
+        $data = Db::table($name)->where($pk, $id)->find();
+
+        $fields = $this->dbLogic->getFields($name, 'COLUMN_NAME,COLUMN_COMMENT');
+
+        foreach ($fields as $field) {
+
+            $form->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '(' . $field['COLUMN_COMMENT'] . ')')->fullSize(3);
+        }
+
+        $form->fill($data);
+
+        $form->readonly();
 
         return $builder->render();
     }
