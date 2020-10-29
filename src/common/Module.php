@@ -17,6 +17,6 @@ class Module extends baseModule
     protected $__root__ = __DIR__ . '/../../';
 
     protected $modules = [
-        'admin' => ['config', 'extension', 'dbtable'],
+        'admin' => ['config', 'extension', 'dbtable', 'creator'],
     ];
 }
