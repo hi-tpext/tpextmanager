@@ -82,7 +82,7 @@ class Creator extends Controller
         $where = $this->filterWhere();
         $table = $this->table;
 
-        $data = $this->dbLogic->getTables('TABLE_NAME,CREATE_TIME,TABLE_COMMENT', $where, $sortOrder);
+        $data = $this->dbLogic->getTables('TABLE_NAME,CREATE_TIME,TABLE_COMMENT,TABLE_ROWS,AUTO_INCREMENT', $where, $sortOrder);
 
         $this->buildTable($data);
         $table->fill($data);
@@ -122,9 +122,11 @@ class Creator extends Controller
 
         $form = $this->form;
         $fields = $this->dbLogic->getFields($data['TABLE_NAME'], 'COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,COLUMN_COMMENT,IS_NULLABLE,NUMERIC_SCALE,NUMERIC_PRECISION,CHARACTER_MAXIMUM_LENGTH,DATA_TYPE');
-        $form->text('TABLE_NAME', '表名')->readonly();
-        $form->text('CONTROLLER', '控制器名')->default(ucfirst(strtolower(Loader::parseName($table, 1))))->help('支持二级目录，如：shop/order');
-        $form->text('controller_title', '控制器名称')->default($data['TABLE_COMMENT'])->required();
+        $form->hidden('TABLE_NAME');
+        $form->hidden('solft_delete')->value($this->dbLogic->getFieldInfo($data['TABLE_NAME'], 'delete_time') ? 1 : 0);
+        $form->radio('model_namespace', 'model命名空间')->options(['common' => 'app\common\model', 'admin' => 'app\admin\model'])->default('common');
+        $form->text('controller', 'Controller名称')->default(ucfirst(strtolower(Loader::parseName($table, 1))))->help('支持二级目录，如：shop/order');
+        $form->text('controller_title', '控制器注释')->default($data['TABLE_COMMENT'])->required();
         $form->switchBtn('table_build', '表格生成')->default(1);
         $form->checkbox('table_toolbars', '表格工具')->options(['add' => '添加', 'delete' => '批量删除', 'export' => '导出', 'enable' => '批量禁用/启用', 'import' => '导入'])
             ->default('add,delete,export')->checkallBtn()->help('未选择任何一项则禁用工具栏');
@@ -139,7 +141,7 @@ class Creator extends Controller
 
             if ($this->dbLogic->isInteger($field['DATA_TYPE'])
                 || $this->dbLogic->isDecimal($field['DATA_TYPE'])
-                || (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']))) {
+                || (preg_match('/^.*(date|time)$/', $field['COLUMN_NAME']))) {
                 $field['ATTR'][] = 'sortable';
             }
 
@@ -168,7 +170,7 @@ class Creator extends Controller
                 $field['DISPLAYER_TYPE'] = '_';
             } else if (preg_match('/^\w*?(?:openid|salt|token)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = '_';
-            } else if (preg_match('/^\w*?delete_time $/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^(?:delete_time|delete_at)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = '_';
             }
         }
@@ -193,13 +195,13 @@ class Creator extends Controller
                 $field['DISPLAYER_TYPE'] = 'hidden';
             } else if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'select';
-                $field['FIELD_RELATION'] = url('/admin/' . strtolower(Loader::parseName($table, 1)) . '/selectpage', [], false);
+                $field['FIELD_RELATION'] = 'selectpage';
             } else if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'select';
-                $field['FIELD_RELATION'] = url('/admin/' . strtolower(Loader::parseName($mch[1], 1)) . '/selectpage', [], false);
+                $field['FIELD_RELATION'] = '/admin/' . strtolower(Loader::parseName($mch[1], 1)) . '/selectpage';
             } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'multipleSelect';
-                $field['FIELD_RELATION'] = url('/admin/' . strtolower(Loader::parseName($mch[1], 1)) . '/selectpage', [], false);
+                $field['FIELD_RELATION'] = '/admin/' . strtolower(Loader::parseName($mch[1], 1)) . '/selectpage';
             } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'image';
             } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)s$/', $field['COLUMN_NAME'])) {
@@ -223,7 +225,7 @@ class Creator extends Controller
             } else if (preg_match('/^is_\w+|enabled?$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'switchBtn';
             } else if (preg_match('/^\w*?(?:status|state)$/', $field['COLUMN_NAME'])) {
-                $field['DISPLAYER_TYPE'] = 'checkbox';
+                $field['DISPLAYER_TYPE'] = 'radio';
             } else if (preg_match('/^\w*?(?:password|pwd)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'password';
             } else if (preg_match('/^\w*?(?:openid|salt|token)$/', $field['COLUMN_NAME'])) {
@@ -292,11 +294,11 @@ class Creator extends Controller
         $dir = '';
         $controllerName = '';
 
-        if (preg_match('/^\w+$/', $data['CONTROLLER'])) {
+        if (preg_match('/^\w+$/', $data['controller'])) {
             $dir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', '']);
 
-            $controllerName = ucfirst(strtolower(Loader::parseName($data['CONTROLLER'], 1)));
-        } else if (preg_match('/^(\w+)[\/](\w+)$/', $data['CONTROLLER'], $mch)) {
+            $controllerName = ucfirst(strtolower(Loader::parseName($data['controller'], 1)));
+        } else if (preg_match('/^(\w+)[\/](\w+)$/', $data['controller'], $mch)) {
             $dir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', strtolower($mch[1]), '']);
 
             $controllerName = ucfirst(strtolower(Loader::parseName($mch[2], 1)));
@@ -304,17 +306,35 @@ class Creator extends Controller
             $this->error('控制器名称有误');
         }
 
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
         $fileName = $dir . $controllerName . '.php';
 
-        if (is_file($fileName)) {
-            file_put_contents($fileName . '.' . date('YmdHis') . '.bak', file_get_contents($fileName));
+        if (!$this->creatorLogic->saveFile($dir, $fileName, implode(PHP_EOL, $this->creatorLogic->getLins()))) {
+            $this->error('控制器文件保失败：' . $fileName);
         }
 
-        file_put_contents($fileName, implode(PHP_EOL, $this->creatorLogic->getLins()));
+        $modelNamespace = '';
+        $mdir = '';
+        if ($data['model_namespace'] == 'common') {
+            $modelNamespace = 'app\\common\\model';
+            $mdir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
+        } else {
+            $modelNamespace = 'app\\admin\\model';
+            $mdir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
+        }
+
+        $table = preg_replace('/^' . $this->prefix . '(.+)$/', '$1', $data['TABLE_NAME']);
+
+        $modelName = Loader::parseName($table, 1);
+
+        $modelFileName = $mdir . $modelName . '.php';
+
+        $this->creatorLogic->saveFile($mdir, $modelFileName, implode(PHP_EOL, $this->creatorLogic->getModleLines($modelNamespace, $table, $data['solft_delete'])));
+
+        $fields = $this->dbLogic->getFields($data['TABLE_NAME'], 'COLUMN_NAME,COLUMN_COMMENT');
+
+        $ldir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', config('default_lang'), '']);
+
+        $this->creatorLogic->saveFile($ldir, $ldir . strtolower($modelName) . '.php', implode(PHP_EOL, $this->creatorLogic->getLangLines($fields)));
 
         return $this->builder()->layer()->closeRefresh(1, '生成成功，文件保存在：' . $fileName);
     }
@@ -328,12 +348,11 @@ class Creator extends Controller
     {
         $table = $this->table;
 
-        $table->fields('表名')->with(
-            $table->show('TABLE_NAME', '表名'),
-            $table->show('TABLE_COMMENT', '表注释')
-        )->getWrapper()->addStyle('width:260px');
-
-        $table->show('CREATE_TIME', '创建时间')->getWrapper()->addStyle('width:160px');
+        $table->show('TABLE_NAME', '表名');
+        $table->show('TABLE_COMMENT', '表注释');
+        $table->raw('TABLE_ROWS', '记录条数');
+        $table->show('AUTO_INCREMENT', '自增id');
+        $table->show('CREATE_TIME', '创建时间');
 
         $table->getToolbar()
             ->btnRefresh()
