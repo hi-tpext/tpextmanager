@@ -26,6 +26,8 @@ class Dbtable extends Controller
      */
     protected $dbLogic;
 
+    protected $prefix;
+
     protected function initialize()
     {
         $this->pageTitle = '数据表管理';
@@ -34,12 +36,13 @@ class Dbtable extends Controller
             $this->indexText = '不建议在[正式环境]中使用这些功能！';
         }
 
-        $this->pagesize = 10;
         $this->pk = 'TABLE_NAME';
 
         $this->database = config('database.database');
 
         $this->dbLogic = new DbLogic;
+
+        $this->prefix = $this->dbLogic->getPrefix();
     }
 
     protected function filterWhere()
@@ -126,7 +129,7 @@ class Dbtable extends Controller
     {
         $form = $this->form;
 
-        $form->text('TABLE_NAME', '表名')->required()->maxlength(50)->help($isEdit ? ' 若非必要，请不要随意修改' : '英文字母或数字组成')->default($this->dbLogic->getPrefix());
+        $form->text('TABLE_NAME', '表名')->required()->maxlength(50)->help($isEdit ? ' 若非必要，请不要随意修改' : '英文字母或数字组成')->default($this->prefix);
         $form->text('TABLE_COMMENT', '表注释')->required()->maxlength(50)->help('表的描述说明');
 
         if ($isEdit) {
@@ -157,7 +160,7 @@ class Dbtable extends Controller
                     $form->text('COLUMN_COMMENT', '注释')->required(),
                     $form->select('DATA_TYPE', '类型')->options($this->dbLogic::$FIELD_TYPES)->required()->getWrapper()->addStyle('width:160px;'),
                     $form->text('LENGTH', '长度')->getWrapper()->addStyle('width:100px;'),
-                    $form->checkbox('ATTR', '属性')->options(['auto_inc' => '自增', 'unsigned' => '非负'])->getWrapper()->addStyle('width:160px;'),
+                    $form->checkbox('ATTR', '属性')->options(['auto_inc' => '自增', 'unsigned' => '非负'])->getWrapper()->addStyle('width:160px;')
                 );
         }
     }
@@ -176,8 +179,8 @@ class Dbtable extends Controller
             'fields',
         ], 'post');
 
-        if ($this->dbLogic->getPrefix() && strpos($data['TABLE_NAME'], $this->dbLogic->getPrefix())) {
-            $data['TABLE_NAME'] = $this->dbLogic->getPrefix() . $data['TABLE_NAME'];
+        if ($this->prefix && strpos($data['TABLE_NAME'], $this->prefix)) {
+            $data['TABLE_NAME'] = $this->prefix . $data['TABLE_NAME'];
         }
 
         $result = $this->validate($data, [
@@ -240,6 +243,7 @@ class Dbtable extends Controller
             ->btnDelete();
 
         $table->useCheckbox(false);
+        $table->sortable('TABLE_NAME,TABLE_ROWS,CREATE_TIME,TABLE_COLLATION,AUTO_INCREMENT,AVG_ROW_LENGTH,INDEX_LENGTH');
     }
 
     /**
@@ -506,7 +510,7 @@ class Dbtable extends Controller
                 $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWrapper()->addStyle('width:100px;'),
                 $form->text('COLUMN_DEFAULT', '默认值')->default(''),
                 $form->switchBtn('IS_NULLABLE', '可空')->getWrapper()->addStyle('width:100px;'),
-                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:220px;'),
+                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:220px;')
             );
 
         return $builder->render();
@@ -594,15 +598,19 @@ class Dbtable extends Controller
 
         $deletedFields = $this->dbLogic->getDeletedFields($name);
 
+        $fieldNames = [];
+
         foreach ($fields as $field) {
-            $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+            $fieldNames[] = $field['COLUMN_NAME'];
+
+            $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
         }
 
         unset($field);
 
         foreach ($deletedFields as $field) {
             $table->show($field['COLUMN_NAME'], ($field['COLUMN_NAME'] == $show_field ? '<i style="color:red;">=></i>' : '') . $field['COLUMN_NAME'] . '<label class="label label-danger">[已删除]</label>' . '<br>' . $field['COLUMN_COMMENT'])
-                ->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+                ->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
         }
 
         $table->fill($data);
@@ -611,15 +619,50 @@ class Dbtable extends Controller
 
         $table->sortOrder($sortOrder);
 
-        $table->useActionbar(false);
+        if (!empty($pk) && is_string($pk)) {
+            $table->getActionbar()
+                ->btnView(url('dataview', ['name' => $name, 'id' => "__data.{$pk}__", 'pk' => $pk]));
+        }
 
         $table->useCheckbox(false);
 
         $table->useToolbar(false);
 
+        $table->sortable($fieldNames);
+
         if (request()->isAjax()) {
             return $table->partial()->render();
         }
+
+        return $builder->render();
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @title 查看数据-详情
+     * @return mixed
+     */
+    public function dataview($name, $id, $pk)
+    {
+        $tableInfo = $this->dbLogic->getTableInfo($name);
+
+        $builder = $this->builder('查看数据', $name . '[' . $tableInfo['TABLE_COMMENT'] . ']');
+
+        $form = $builder->form();
+
+        $data = Db::table($name)->where($pk, $id)->find();
+
+        $fields = $this->dbLogic->getFields($name, 'COLUMN_NAME,COLUMN_COMMENT');
+
+        foreach ($fields as $field) {
+
+            $form->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '(' . $field['COLUMN_COMMENT'] . ')')->fullSize(3);
+        }
+
+        $form->fill($data);
+
+        $form->readonly();
 
         return $builder->render();
     }
