@@ -89,6 +89,12 @@ class CreatorLogic
         return $actions;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param array $data
+     * @return void
+     */
     public function make($data)
     {
         $this->begin($data);
@@ -107,6 +113,12 @@ class CreatorLogic
         $this->end($data);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param array $data
+     * @return void
+     */
     public function begin($data)
     {
         $table = preg_replace('/^' . $this->prefix . '(.+)$/', '$1', $data['TABLE_NAME']);
@@ -178,6 +190,12 @@ class CreatorLogic
         $this->lines[] = '    }';
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param array $data
+     * @return void
+     */
     public function end($data)
     {
         $this->lines[] = '';
@@ -189,7 +207,7 @@ class CreatorLogic
      * Undocumented function
      *
      * @param array $data
-     * @return array
+     * @return void
      */
     public function buildTable($data)
     {
@@ -308,7 +326,7 @@ class CreatorLogic
      * Undocumented function
      *
      * @param array $data
-     * @return array
+     * @return void
      */
     public function filterWhere($data)
     {
@@ -372,7 +390,7 @@ class CreatorLogic
      * Undocumented function
      *
      * @param array $data
-     * @return array
+     * @return void
      */
     public function buildSearch($data)
     {
@@ -418,7 +436,7 @@ class CreatorLogic
      * Undocumented function
      *
      * @param array $data
-     * @return array
+     * @return void
      */
     public function buildForm($data)
     {
@@ -471,7 +489,7 @@ class CreatorLogic
      * Undocumented function
      *
      * @param array $data
-     * @return array
+     * @return void
      */
     public function save($data)
     {
@@ -528,7 +546,8 @@ class CreatorLogic
      * Undocumented function
      *
      * @param string $modelNamespace
-     * @param boolean $solft_delete
+     * @param string $table
+     * @param string $solft_delete
      * @return array
      */
     public function getModleLines($modelNamespace, $table, $solft_delete)
@@ -572,11 +591,10 @@ class CreatorLogic
     /**
      * Undocumented function
      *
-     * @param string $modelNamespace
-     * @param boolean $solft_delete
+     * @param array $fields
      * @return array
      */
-    public function getLangLines($fields)
+    public function getLangLines($data, $fields)
     {
         $lines = [];
 
@@ -590,6 +608,13 @@ class CreatorLogic
         if (!empty($fields)) {
 
             foreach ($fields as $field) {
+
+                foreach ($data['FORM_FIELDS'] as $formField) {
+
+                    if ($field['COLUMN_NAME'] == $formField['COLUMN_NAME']) {
+                        $field['COLUMN_COMMENT'] = $formField['COLUMN_COMMENT'];
+                    }
+                }
 
                 $lines[] = "    '{$field['COLUMN_NAME']}'  => '{$field['COLUMN_COMMENT']}',";
 
@@ -606,6 +631,14 @@ class CreatorLogic
         return $lines;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param string $dir
+     * @param string $file
+     * @param string $content
+     * @return boolean
+     */
     public function saveFile($dir, $file, $content)
     {
         if (!is_dir($dir)) {
