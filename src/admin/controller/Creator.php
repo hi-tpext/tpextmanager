@@ -179,7 +179,7 @@ class Creator extends Controller
             ->with(
                 $form->text('COLUMN_NAME', '字段名')->readonly(),
                 $form->text('COLUMN_TYPE', '字段类型')->readonly()->getWrapper()->addStyle('width:140px;'),
-                $form->text('COLUMN_COMMENT', '字段注释')->required(),
+                $form->text('COLUMN_COMMENT', '字段注释')->readonly(),
                 $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayerMap()))
                     ->beforOptions(['_' => '无'])->required(),
                 $form->checkbox('ATTR', '属性')->options(['sortable' => '排序', 'search' => '搜索']),
@@ -334,7 +334,7 @@ class Creator extends Controller
 
         $ldir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', config('default_lang'), '']);
 
-        $this->creatorLogic->saveFile($ldir, $ldir . strtolower($modelName) . '.php', implode(PHP_EOL, $this->creatorLogic->getLangLines($fields)));
+        $this->creatorLogic->saveFile($ldir, $ldir . strtolower($modelName) . '.php', implode(PHP_EOL, $this->creatorLogic->getLangLines($data, $fields)));
 
         return $this->builder()->layer()->closeRefresh(1, '生成成功，文件保存在：' . $fileName);
     }
