@@ -327,7 +327,7 @@ class Creator extends Controller
 
         $modelFileName = $mdir . $modelName . '.php';
 
-        $this->creatorLogic->saveFile($mdir, $modelFileName, implode(PHP_EOL, $this->creatorLogic->getModleLines($modelNamespace, $table, $data['solft_delete'])));
+        $this->creatorLogic->saveFile($mdir, $modelFileName, implode(PHP_EOL, $this->creatorLogic->getModelLines($modelNamespace, $table, $data['solft_delete'])));
 
         $fields = $this->dbLogic->getFields($data['TABLE_NAME'], 'COLUMN_NAME,COLUMN_COMMENT');
 
