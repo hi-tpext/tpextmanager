@@ -529,7 +529,7 @@ class CreatorLogic
      * @param string $solft_delete
      * @return array
      */
-    public function getModleLines($modelNamespace, $table, $solft_delete)
+    public function getModelLines($modelNamespace, $table, $solft_delete)
     {
         $modelName = Loader::parseName($table, 1);
 
@@ -557,7 +557,7 @@ class CreatorLogic
         if ($solft_delete) {
             $lines[] = "use SoftDelete;";
         }
-        $lines[] = '    //protected $name = \'{$table}\'';
+        $lines[] = "    //protected \$name = '{$table}'";
         $lines[] = '';
         $lines[] = '    protected $autoWriteTimestamp = \'datetime\';';
         $lines[] = '';
