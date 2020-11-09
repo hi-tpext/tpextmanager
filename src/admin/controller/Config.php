@@ -8,6 +8,7 @@ use tpext\builder\Common\Form;
 use tpext\builder\common\Table;
 use tpext\common\ExtLoader;
 use tpext\common\model\WebConfig;
+use tpext\common\TpextCore;
 
 /**
  * Undocumented class
@@ -27,6 +28,9 @@ class Config extends Controller
     protected function initialize()
     {
         $this->extensions = ExtLoader::getExtensions();
+
+        $this->extensions[TpextCore::class] = TpextCore::getInstance();
+
         ksort($this->extensions);
 
         $this->dataModel = new WebConfig;
