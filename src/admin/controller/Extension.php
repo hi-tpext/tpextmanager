@@ -22,6 +22,10 @@ class Extension extends Controller
     use HasIndex;
     protected $extensions = [];
 
+    protected $remoteUrl = 'https://gitee.com/ichynul/myadmin/raw/5.0/extensions.json';
+
+    protected $remote = 0;
+
     /**
      * Undocumented variable
      *
@@ -44,6 +48,17 @@ class Extension extends Controller
         $this->dataModel = new ExtensionModel;
     }
 
+    /**
+     * 构建搜索
+     *
+     * @return void
+     */
+    protected function buildSearch()
+    {
+        $search = $this->search;
+        $search->tabLink('remote')->options([0 => '本地', 1 => '远程']);
+    }
+
     protected function buildDataList()
     {
         $page = input('post.__page__/d', 1);
@@ -60,64 +75,95 @@ class Extension extends Controller
 
         $this->pagesize = $pagesize ?: $this->pagesize;
 
-        $extensions = array_slice($this->extensions, ($page - 1) * $this->pagesize, $this->pagesize);
-
         $data = [];
 
-        $installed = ExtLoader::getInstalled(true);
+        $this->remote = input('post.remote');
 
-        if (empty($installed)) {
-            $this->builder()->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
-        }
+        if ($this->remote) {
 
-        if (!empty($installed)) {
-            if (!ExtensionModel::where('key', Module::class)->find()) {
-                Module::getInstance()->install();
-                $installed = ExtLoader::getInstalled(true);
+            $data = file_get_contents($this->remoteUrl);
+
+            $data = $data ? json_decode($data, 1) : [];
+
+            $data = array_slice($data, ($page - 1) * $this->pagesize, $this->pagesize);
+
+            foreach ($data as &$d) {
+
+                $d['ext_type'] = $d['type'] == 'module' ? 1 : 2;
+
+                $d['download'] = 0;
+
+                foreach ($this->extensions as $key => $instance) {
+
+                    if (!class_exists($key)) {
+                        continue;
+                    }
+
+                    if ($instance->getName() == $d['name']) {
+                        $d['download'] = 1;
+                        break;
+                    }
+                }
             }
-        }
+        } else {
 
-        $k = 0;
-        foreach ($extensions as $key => $instance) {
-            if (!class_exists($key)) {
-                continue;
+            $extensions = array_slice($this->extensions, ($page - 1) * $this->pagesize, $this->pagesize);
+
+            $installed = ExtLoader::getInstalled(true);
+
+            if (empty($installed)) {
+                $this->builder()->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
             }
 
-            $is_install = 0;
-            $is_enable = 0;
-            $has_config = !empty($instance->defaultConfig());
-
-            foreach ($installed as $ins) {
-                if ($ins['key'] == $key) {
-                    $is_install = $ins['install'];
-                    $is_enable = $ins['enable'];
-                    break;
+            if (!empty($installed)) {
+                if (!ExtensionModel::where('key', Module::class)->find()) {
+                    Module::getInstance()->install();
+                    $installed = ExtLoader::getInstalled(true);
                 }
             }
 
-            $instance->copyAssets();
+            $k = 0;
+            foreach ($extensions as $key => $instance) {
+                if (!class_exists($key)) {
+                    continue;
+                }
 
-            $data[$k] = [
-                'id' => str_replace('\\', '-', $key),
-                'install' => $is_install,
-                'enable' => $is_enable,
-                'name' => $instance->getName(),
-                'title' => $instance->getTitle(),
-                'description' => $instance->getDescription(),
-                'version' => $instance->getVersion(),
-                'ext_type' => $instance instanceof BaseModule ? 1 : 2,
-                'tags' => $instance->getTags(),
-                '__h_in__' => $is_install,
-                '__h_un__' => !$is_install,
-                '__h_st__' => !$is_install || !$has_config,
-                '__h_cp__' => empty($instance->getAssets()),
-            ];
+                $is_install = 0;
+                $is_enable = 0;
+                $has_config = !empty($instance->defaultConfig());
 
-            if ($key == Module::class) {
-                $data[$k]['__h_un__'] = 1;
+                foreach ($installed as $ins) {
+                    if ($ins['key'] == $key) {
+                        $is_install = $ins['install'];
+                        $is_enable = $ins['enable'];
+                        break;
+                    }
+                }
+
+                $instance->copyAssets();
+
+                $data[$k] = [
+                    'id' => str_replace('\\', '-', $key),
+                    'install' => $is_install,
+                    'enable' => $is_enable,
+                    'name' => $instance->getName(),
+                    'title' => $instance->getTitle(),
+                    'description' => $instance->getDescription(),
+                    'version' => $instance->getVersion(),
+                    'ext_type' => $instance instanceof BaseModule ? 1 : 2,
+                    'tags' => $instance->getTags(),
+                    '__h_in__' => $is_install,
+                    '__h_un__' => !$is_install,
+                    '__h_st__' => !$is_install || !$has_config,
+                    '__h_cp__' => empty($instance->getAssets()),
+                ];
+
+                if ($key == Module::class) {
+                    $data[$k]['__h_un__'] = 1;
+                }
+
+                $k += 1;
             }
-
-            $k += 1;
         }
 
         $this->buildTable($data);
@@ -146,39 +192,38 @@ class Extension extends Controller
         );
         $table->show('tags', '分类');
         $table->show('description', '介绍')->getWrapper()->addStyle('width:40%;');
-        $table->show('version', '版本号');
-        $table->match('install', '安装')->options(
-            [
-                0 => '<label class="label label-secondary">未安装</label>',
-                1 => '<label class="label label-success">已安装</label>',
-            ]
-        );
 
-        $table->switchBtn('enable', '启用')->autoPost(url('enable'))
-            ->mapClassWhen([0], 'hidden', 'install');
+        if ($this->remote) {
+            $table->match('download', '下载')->options([0 => '未下载', 1 => '已下载'])->mapClassGroup([[0, 'default'], [1, 'success']]);
+            $table->show('composer', 'Composer');
+            $table->show('platform', 'TP版本支持');
+            $table->raw('website', '主页')->to('<a href="{val}" target="_blank">{val}</a>');
+            $table->match('is_free', '免费')->options([1 => '是', 0 => '否']);
+            $table->useActionbar(false);
+        } else {
+            $table->show('version', '版本号');
+            $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
 
-        $table->getToolbar()
-            ->btnRefresh();
+            $table->switchBtn('enable', '启用')->autoPost(url('enable'))
+                ->mapClassWhen([0], 'hidden', 'install');
 
-        $table->getActionbar()
-            ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
-            ->btnLink('uninstall', url('uninstall', ['key' => '__data.id__']), '', 'btn-danger', 'mdi-delete', 'title="卸载"')
-            ->btnLink('setting', url('/admin/config/edit', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置" data-layer-size="98%,98%"')
-            ->btnPostRowid(
-                'copyAssets',
-                url('copyAssets'),
-                '',
-                'btn-purple',
-                'mdi-redo',
-                'title="刷新资源"',
-                '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？'
-            )
-            ->mapClass([
-                'install' => ['hidden' => '__h_in__'],
-                'uninstall' => ['hidden' => '__h_un__'],
-                'setting' => ['hidden' => '__h_st__'],
-                'copyAssets' => ['hidden' => '__h_cp__'],
-            ]);
+            $table->getToolbar()
+                ->btnRefresh();
+
+            $table->getActionbar()
+                ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
+                ->btnLink('uninstall', url('uninstall', ['key' => '__data.id__']), '', 'btn-danger', 'mdi-delete', 'title="卸载"')
+                ->btnLink('setting', url('/admin/config/edit', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置" data-layer-size="98%,98%"')
+                ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"',
+                    '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？'
+                )
+                ->mapClass([
+                    'install' => ['hidden' => '__h_in__'],
+                    'uninstall' => ['hidden' => '__h_un__'],
+                    'setting' => ['hidden' => '__h_st__'],
+                    'copyAssets' => ['hidden' => '__h_cp__'],
+                ]);
+        }
 
         $table->useCheckbox(false);
     }
@@ -328,8 +373,6 @@ class Extension extends Controller
             $form->html('', '', 3)->showLabel(false);
             $form->btnLayerClose();
         }
-
-
 
         if ($isModule) {
             $form->tab('模块&菜单');
