@@ -105,6 +105,9 @@ class Extension extends Controller
                     }
                 }
             }
+
+            $table->paginator(count($data), $this->pagesize);
+
         } else {
 
             $extensions = array_slice($this->extensions, ($page - 1) * $this->pagesize, $this->pagesize);
@@ -164,11 +167,12 @@ class Extension extends Controller
 
                 $k += 1;
             }
+
+            $table->paginator(count($this->extensions), $this->pagesize);
         }
 
         $this->buildTable($data);
         $table->fill($data);
-        $table->paginator(count($this->extensions), $this->pagesize);
 
         return $data;
     }
@@ -199,7 +203,8 @@ class Extension extends Controller
             $table->show('platform', 'TP版本支持');
             $table->raw('website', '主页')->to('<a href="{val}" target="_blank">{val}</a>');
             $table->match('is_free', '免费')->options([1 => '是', 0 => '否']);
-            $table->useActionbar(false);
+            $table->getActionbar()
+                ->btnLink('view', '__data.website__', '主页', 'btn-primary', 'mdi-web', 'title="主页" target="_blank"')->getCurrent()->useLayer(false);
         } else {
             $table->show('version', '版本号');
             $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
