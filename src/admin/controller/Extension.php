@@ -201,7 +201,6 @@ class Extension extends Controller
             $table->match('download', '下载')->options([0 => '未下载', 1 => '已下载'])->mapClassGroup([[0, 'default'], [1, 'success']]);
             $table->show('composer', 'Composer');
             $table->show('platform', 'TP版本支持');
-            $table->raw('website', '主页')->to('<a href="{val}" target="_blank">{val}</a>');
             $table->match('is_free', '免费')->options([1 => '是', 0 => '否']);
             $table->getActionbar()
                 ->btnLink('view', '__data.website__', '主页', 'btn-primary', 'mdi-web', 'title="主页" target="_blank"')->getCurrent()->useLayer(false);
