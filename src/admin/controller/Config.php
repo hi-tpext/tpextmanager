@@ -42,7 +42,7 @@ class Config extends Controller
 
         $installed = ExtLoader::getInstalled();
 
-        if (request()->isPost()) {
+        if (request()->isAjax()) {
             $data = request()->post();
 
             if (!isset($data['config_key'])) {
@@ -116,6 +116,7 @@ class Config extends Controller
                 $form = $tab->form($instance->getTitle(), $confkey == $config_key);
                 $form->formId('the-from' . $config_key);
                 $form->hidden('config_key')->value($config_key);
+                $form->method('put');
                 $this->buildConfig($form, $default, $saved);
             }
 
