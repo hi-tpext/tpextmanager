@@ -383,14 +383,10 @@ EOT;
                 continue;
             }
 
-            if (is_array($val)) {
-                $saved[$key] = json_encode($saved[$key]);
-            }
-
             if (isset($fieldTypes[$key])) {
                 $type = $fieldTypes[$key];
 
-                $fieldType = $type['type'];
+                $fieldType = strtolower($type['type']);
                 $label = isset($type['label']) ? $type['label'] : '';
                 $help = isset($type['help']) ? $type['help'] : '';
                 $required = isset($type['required']) ? $type['required'] : false;
@@ -420,7 +416,7 @@ EOT;
                 if ($afterSymbol) {
                     $field->afterSymbol($afterSymbol);
                 }
-                if (in_array($fieldType, ['radio', 'select', 'checkbox', 'multipleSelect'])) {
+                if (in_array($fieldType, ['radio', 'select', 'checkbox', 'multipleselect'])) {
 
                     $field->options(isset($type['options']) ? $type['options'] : [0 => '为什么没有选项？', 1 => '？项选有没么什为']);
                 }
@@ -439,6 +435,10 @@ EOT;
                 $field = $form->text($key)->default($val);
             }
 
+            if (!in_array($fieldType, ['checkbox', 'multipleselect', 'matches']) && is_array($val)) {
+                $saved[$key] = json_encode($saved[$key]);
+            }
+
             if (in_array($key, $savedKeys)) {
                 $field->value($saved[$key]);
             }
@@ -448,7 +448,22 @@ EOT;
     private function seveConfig($default, $data, $config_key, $filePath)
     {
         $values = [];
+
+        $fieldTypes = [];
+
+        $type = '';
+        $fieldType = '';
+
+        if (isset($default['__config__'])) {
+            $fieldTypes = $default['__config__'];
+        }
+
         foreach ($default as $key => $val) {
+
+            if (isset($fieldTypes[$key])) {
+                $type = $fieldTypes[$key];
+                $fieldType = strtolower($type['type']);
+            }
 
             if ($key == '__config__') {
                 continue;
@@ -458,12 +473,13 @@ EOT;
                 continue;
             }
 
-            $values[$key] = $data[$key];
-
-            if (is_array($val)) {
-                $values[$key] = json_decode($data[$key]);
+            if (!in_array($fieldType, ['checkbox', 'multipleselect']) && is_array($val)) {
+                $values[$key] = json_decode($data[$key], 1);
+            } else {
+                $values[$key] = $data[$key];
             }
         }
+
         $this->dataModel::clearCache($config_key);
 
         if ($exist = $this->dataModel->where(['key' => $config_key])->find()) {
