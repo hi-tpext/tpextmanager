@@ -148,7 +148,7 @@ class Config extends Controller
 
     public function add()
     {
-        if (request()->isPost()) {
+        if (request()->isAjax()) {
 
             $data = request()->only([
                 'title',
@@ -256,7 +256,7 @@ EOT;
 
         $builder = Builder::getInstance('扩展管理', '配置-' . $instance->getTitle());
 
-        if (request()->isPost()) {
+        if (request()->isAjax()) {
             $data = request()->post();
 
             $res = $this->seveConfig($default, $data, $instance->getId(), $instance->configPath());
@@ -338,7 +338,7 @@ EOT;
         }
 
         if ($res) {
-            $this->success('成功删除' . $res . '条数据');
+            $this->success('成功删除' . $res . '条数据', '', ['script' => "<script>location.reload();</script>"]);
         } else {
             $this->error('删除失败');
         }
@@ -373,6 +373,9 @@ EOT;
 
         $fieldTypes = [];
 
+        $type = '';
+        $fieldType = '';
+
         if (isset($default['__config__'])) {
             $fieldTypes = $default['__config__'];
         }
@@ -387,6 +390,7 @@ EOT;
                 $type = $fieldTypes[$key];
 
                 $fieldType = strtolower($type['type']);
+
                 $label = isset($type['label']) ? $type['label'] : '';
                 $help = isset($type['help']) ? $type['help'] : '';
                 $required = isset($type['required']) ? $type['required'] : false;
@@ -403,7 +407,6 @@ EOT;
                     $field->value($default[$key]);
                     continue;
                 }
-                $field->default($val);
                 if ($befor) {
                     $field->befor($befor);
                 }
@@ -432,7 +435,7 @@ EOT;
                 $form->fieldsEnd();
             } else {
 
-                $field = $form->text($key)->default($val);
+                $field = $form->text($key);
             }
 
             if (!in_array($fieldType, ['checkbox', 'multipleselect', 'matches']) && is_array($val)) {
@@ -470,7 +473,11 @@ EOT;
             }
 
             if (!isset($data[$key])) {
-                continue;
+                if (in_array($fieldType, ['checkbox', 'multipleselect'])) {
+                    $data[$key] = [];
+                } else {
+                    $data[$key] = '';
+                }
             }
 
             if (!in_array($fieldType, ['checkbox', 'multipleselect']) && is_array($val)) {
