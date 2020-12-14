@@ -263,7 +263,7 @@ class CreatorLogic
             $this->lines[] = implode(PHP_EOL, $sline);
 
             if (!in_array('export', $tableToolbars)) {
-                $this->lines[] = '        $table->hasExport(false);';
+                $this->lines[] = '        $table->useExport(false);';
             }
 
             $sline = [''];
