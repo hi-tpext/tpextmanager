@@ -210,8 +210,8 @@ class Extension extends Controller
             $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
 
             $table->switchBtn('enable', '启用')->autoPost(url('enable'))
-                ->mapClass(0, 'hidden', 'install')
-                ->mapClass([Module::class, TpextCore::class], 'hidden', 'key');
+                ->mapClass(0, 'hidden', 'install')//未安装，隐藏[启用/禁用]
+                ->mapClass([Module::class, TpextCore::class], 'hidden', 'key');//特殊扩展，隐藏[启用/禁用]
 
             $table->getToolbar()
                 ->btnRefresh();
