@@ -147,6 +147,7 @@ class Extension extends Controller
 
                 $data[$k] = [
                     'id' => str_replace('\\', '-', $key),
+                    'key' => $key,
                     'install' => $is_install,
                     'enable' => $is_enable,
                     'name' => $instance->getName(),
@@ -209,7 +210,8 @@ class Extension extends Controller
             $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
 
             $table->switchBtn('enable', '启用')->autoPost(url('enable'))
-                ->mapClassWhen([0], 'hidden', 'install');
+                ->mapClass(0, 'hidden', 'install') //未安装，隐藏[启用/禁用]
+                ->mapClass([Module::class, TpextCore::class], 'hidden', 'key'); //特殊扩展，隐藏[启用/禁用]
 
             $table->getToolbar()
                 ->btnRefresh();
