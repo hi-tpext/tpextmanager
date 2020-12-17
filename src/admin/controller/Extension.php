@@ -125,6 +125,9 @@ class Extension extends Controller
                 }
             }
 
+            $is_install = 0;
+            $is_enable = 0;
+            $is_latest = 0;
             $k = 0;
             foreach ($extensions as $key => $instance) {
                 if (!class_exists($key)) {
@@ -139,6 +142,7 @@ class Extension extends Controller
                     if ($ins['key'] == $key) {
                         $is_install = $ins['install'];
                         $is_enable = $ins['enable'];
+                        $is_latest = $ins['version'] == $instance->getVersion();
                         break;
                     }
                 }
@@ -156,6 +160,7 @@ class Extension extends Controller
                     'version' => $instance->getVersion(),
                     'ext_type' => $instance instanceof BaseModule ? 1 : 2,
                     'tags' => $instance->getTags(),
+                    '__h_up__' => !$is_install || $is_latest,
                     '__h_in__' => $is_install,
                     '__h_un__' => !$is_install,
                     '__h_st__' => !$is_install || !$has_config,
@@ -217,6 +222,7 @@ class Extension extends Controller
                 ->btnRefresh();
 
             $table->getActionbar()
+                ->btnLink('upgrade', url('upgrade', ['key' => '__data.id__']), '', 'btn-success', 'mdi-arrow-up-bold-circle', 'title="升级"')
                 ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
                 ->btnLink('uninstall', url('uninstall', ['key' => '__data.id__']), '', 'btn-danger', 'mdi-delete', 'title="卸载"')
                 ->btnLink('setting', url('/admin/config/edit', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置" data-layer-size="98%,98%"')
@@ -224,6 +230,7 @@ class Extension extends Controller
                     '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？'
                 )
                 ->mapClass([
+                    'upgrade' => ['hidden' => '__h_up__'],
                     'install' => ['hidden' => '__h_in__'],
                     'uninstall' => ['hidden' => '__h_un__'],
                     'setting' => ['hidden' => '__h_st__'],
@@ -243,13 +250,13 @@ class Extension extends Controller
         $id = str_replace('-', '\\', $key);
 
         if (!isset($this->extensions[$id])) {
-            return Builder::getInstance('扩展管理')->layer()->close(0, '扩展不存在！');
+            return Builder::getInstance()->layer()->close(0, '扩展不存在！');
         }
 
         $installed = ExtLoader::getInstalled();
 
         if (empty($installed) && $id != Module::class) {
-            return Builder::getInstance('扩展管理')->layer()->close(0, '已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
+            return Builder::getInstance()->layer()->close(0, '已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]');
         }
 
         $instance = $this->extensions[$id];
@@ -257,6 +264,9 @@ class Extension extends Controller
         $builder = Builder::getInstance('扩展管理', '安装-' . $instance->getTitle());
 
         if (request()->isPost()) {
+
+            $this->checkToken();
+
             $res = $instance->install();
             $errors = $instance->getErrors();
 
@@ -279,7 +289,7 @@ class Extension extends Controller
             }
         } else {
             $form = $builder->form();
-            $this->detail($form, $instance, true);
+            $this->detail($form, $instance, 1);
             return $builder->render();
         }
     }
@@ -293,7 +303,7 @@ class Extension extends Controller
         $id = str_replace('-', '\\', $key);
 
         if (!isset($this->extensions[$id])) {
-            return Builder::getInstance('扩展管理')->layer()->close(0, '扩展不存在！');
+            return Builder::getInstance()->layer()->close(0, '扩展不存在！');
         }
 
         $instance = $this->extensions[$id];
@@ -301,6 +311,9 @@ class Extension extends Controller
         $builder = Builder::getInstance('扩展管理', '卸载-' . $instance->getTitle());
 
         if (request()->isPost()) {
+
+            $this->checkToken();
+
             $sql = input('post.sql/a', []);
             $res = $instance->uninstall(!empty($sql));
             $errors = $instance->getErrors();
@@ -325,7 +338,54 @@ class Extension extends Controller
         } else {
 
             $form = $builder->form();
-            $this->detail($form, $instance, false);
+            $this->detail($form, $instance, 2);
+            return $builder->render();
+        }
+    }
+
+    public function upgrade($key = '')
+    {
+        if (empty($key)) {
+            return Builder::getInstance()->layer()->close(0, '参数有误！');
+        }
+
+        $id = str_replace('-', '\\', $key);
+
+        if (!isset($this->extensions[$id])) {
+            return Builder::getInstance()->layer()->close(0, '扩展不存在！');
+        }
+
+        $instance = $this->extensions[$id];
+
+        $builder = Builder::getInstance('扩展管理', '升级-' . $instance->getTitle());
+
+        if (request()->isPost()) {
+
+            $this->checkToken();
+
+            $res = $instance->upgrade();
+            $errors = $instance->getErrors();
+
+            if ($res) {
+                if (empty($errors)) {
+                    return $builder->layer()->closeRefresh(1, '升级成功');
+                } else {
+                    return $builder->layer()->closeRefresh(0, '升级成功，但可能有些错误');
+                }
+            } else {
+
+                $text = [];
+                foreach ($errors as $err) {
+                    $text[] = $err->getMessage();
+                }
+
+                $builder->content()->display('<h5>执行出错：</h5>:' . implode('<br>', $text));
+
+                return $builder->render();
+            }
+        } else {
+            $form = $builder->form();
+            $this->detail($form, $instance, 3);
             return $builder->render();
         }
     }
@@ -335,9 +395,10 @@ class Extension extends Controller
      *
      * @param \tpext\builder\common\Form $form
      * @param \tpext\common\Module $instance
+     * @param integer $type
      * @return void
      */
-    private function detail($form, $instance, $isInstall = true)
+    private function detail($form, $instance, $type = 0)
     {
         $isModule = $instance instanceof BaseModule;
         $modules = $isModule ? $instance->getModules() : [];
@@ -357,7 +418,7 @@ class Extension extends Controller
         $form->raw('desc', '介绍')->value($instance->getDescription());
         $form->raw('version', '版本号')->value($instance->getVersion());
 
-        if ($isInstall) {
+        if ($type == 1) {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'install.sql')) {
                 $form->show('sql', '安装脚本')->value('安装将运行SQL脚本');
             } else {
@@ -366,7 +427,7 @@ class Extension extends Controller
             $form->btnSubmit('安&nbsp;&nbsp;装', 1, 'btn-success btn-loading');
             $form->html('', '', 3)->showLabel(false);
             $form->btnLayerClose();
-        } else {
+        } else if ($type == 2) {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql')) {
 
                 $app_debug = config('app_debug');
@@ -376,6 +437,10 @@ class Extension extends Controller
                 $form->show('uninstall', '卸载脚本')->value('无');
             }
             $form->btnSubmit('卸&nbsp;&nbsp;载', 1, 'btn-danger btn-loading');
+            $form->html('', '', 3)->showLabel(false);
+            $form->btnLayerClose();
+        } else if ($type == 3) {
+            $form->btnSubmit('升&nbsp;&nbsp;级', 1, 'btn-success btn-loading');
             $form->html('', '', 3)->showLabel(false);
             $form->btnLayerClose();
         }
@@ -394,7 +459,7 @@ class Extension extends Controller
         }
         $form->mdreader('README')->jsOptions(['readOnly' => true, 'width' => 1200])->size(0, 12)->showLabel(false)->value($README);
 
-        $form->tab('CHANGELOG.md');
+        $form->tab('CHANGELOG.md', $type == 3);
         $README = '暂无';
         if (is_file($instance->getRoot() . 'CHANGELOG.md')) {
             $README = file_get_contents($instance->getRoot() . 'CHANGELOG.md');
@@ -492,6 +557,15 @@ class Extension extends Controller
             $this->success(($value == 1 ? '启用' : '禁用') . '成功');
         } else {
             $this->error('修改失败，或无更改');
+        }
+    }
+
+    protected function checkToken()
+    {
+        $token = session('_csrf_token_');
+
+        if (empty($token) || $token != input('__token__')) {
+            $this->error('token错误');
         }
     }
 }
