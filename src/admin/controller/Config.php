@@ -58,7 +58,8 @@ class Config extends Controller
 
             $rootPath = app()->getRootPath();
 
-            $filePath = $rootPath . $theConfig['file'];
+            $filePath = $rootPath . str_replace(['\\' . '/'], DIRECTORY_SEPARATOR, $theConfig['file']);
+
             if (!is_file($filePath)) {
                 $this->error('原始配置文件不存在：' . $theConfig['file']);
             }
@@ -120,12 +121,12 @@ class Config extends Controller
                 $this->buildConfig($form, $default, $saved);
             }
 
-            $orhers = $this->dataModel->where('key', 'not in', $extensionsKeys)->select();
+            $others = $this->dataModel->where('key', 'not in', $extensionsKeys)->select();
 
             $rootPath = app()->getRootPath();
 
-            foreach ($orhers as $oth) {
-                $filePath = $rootPath . $oth['file'];
+            foreach ($others as $oth) {
+                $filePath = $rootPath . str_replace(['\\' . '/'], DIRECTORY_SEPARATOR, $oth['file']);
                 if (!is_file($filePath)) {
                     continue;
                 }
