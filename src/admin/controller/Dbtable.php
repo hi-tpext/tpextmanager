@@ -610,7 +610,7 @@ class Dbtable extends Controller
 
         foreach ($deletedFields as $field) {
             $table->show($field['COLUMN_NAME'], ($field['COLUMN_NAME'] == $show_field ? '<i style="color:red;">=></i>' : '') . $field['COLUMN_NAME'] . '<label class="label label-danger">[已删除]</label>' . '<br>' . $field['COLUMN_COMMENT'])
-                ->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+                ->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;');
         }
 
         $table->fill($data);
@@ -629,6 +629,13 @@ class Dbtable extends Controller
         $table->useToolbar(false);
 
         $table->sortable($fieldNames);
+
+        $this->builder()->addStyleSheet('
+            .field-show
+            {
+                max-width:100%;max-height:100%;overflow:auto;margin:auto auto;
+            }
+        ');
 
         if (request()->isAjax()) {
             return $table->partial()->render();
