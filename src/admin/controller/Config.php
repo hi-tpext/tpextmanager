@@ -108,7 +108,7 @@ class Config extends Controller
                             'key' => $config_key,
                             'title' => $instance->getTitle(),
                             'file' => str_replace(app()->getRootPath(), '', $instance->configPath()),
-                            'config' => json_encode($default),
+                            'config' => json_encode($default, JSON_UNESCAPED_UNICODE),
                         ]
                     );
                 }
@@ -196,7 +196,7 @@ class Config extends Controller
                     'key' => $data['key'],
                     'title' => $data['title'],
                     'file' => $data['file'],
-                    'config' => json_encode($config),
+                    'config' => json_encode($config, JSON_UNESCAPED_UNICODE),
                 ]
             );
 
@@ -280,7 +280,7 @@ EOT;
                         'key' => $instance->getId(),
                         'title' => $instance->getTitle(),
                         'file' => str_replace(app()->getRootPath(), '', $instance->configPath()),
-                        'config' => json_encode($default),
+                        'config' => json_encode($default, JSON_UNESCAPED_UNICODE),
                     ]
                 );
             }
@@ -441,7 +441,7 @@ EOT;
             }
 
             if (!in_array($fieldType, ['checkbox', 'multipleselect', 'matches']) && is_array($val)) {
-                $saved[$key] = json_encode($saved[$key]);
+                $saved[$key] = json_encode($saved[$key], JSON_UNESCAPED_UNICODE);
             }
 
             if (in_array($key, $savedKeys)) {
@@ -492,11 +492,11 @@ EOT;
         $this->dataModel::clearCache($config_key);
 
         if ($exist = $this->dataModel->where(['key' => $config_key])->find()) {
-            return $exist->force()->save(['config' => json_encode($values)]);
+            return $exist->force()->save(['config' => json_encode($values, JSON_UNESCAPED_UNICODE)]);
         }
 
         $filePath = str_replace(app()->getRootPath(), '', $filePath);
 
-        return $this->dataModel->exists(false)->save(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values)]);
+        return $this->dataModel->exists(false)->save(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values, JSON_UNESCAPED_UNICODE)]);
     }
 }
