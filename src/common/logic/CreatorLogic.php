@@ -213,7 +213,11 @@ class CreatorLogic
                     continue;
                 }
 
-                $line = '        $table->' . $field['DISPLAYER_TYPE'] . "('{$field['COLUMN_NAME']}')";
+                if ($field['DISPLAYER_TYPE'] == 'hasOne') {
+                    $line = '        $table->show' . "('{$field['FIELD_RELATION']}', lang('{$field['COLUMN_NAME']}'))";
+                } else {
+                    $line = '        $table->' . $field['DISPLAYER_TYPE'] . "('{$field['COLUMN_NAME']}')";
+                }
 
                 if (in_array($field['DISPLAYER_TYPE'], $this->autoPostDisplayers)) {
                     $line .= '->autoPost()';
@@ -226,7 +230,7 @@ class CreatorLogic
                     if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(db('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
-                        $line .= "->optionsData(db('table_name')->select(), 'text')";
+                        $line .= "->optionsData(db('table_name')->select(), 'text')/*请修改table_name为关联表名*/";
                     }
                 }
 
@@ -433,11 +437,19 @@ class CreatorLogic
         if (!empty($data['FORM_FIELDS'])) {
 
             $line = '';
+            $createAndUpdate = [];
+
             foreach ($data['FORM_FIELDS'] as $field) {
 
                 if (empty($field['DISPLAYER_TYPE']) || $field['DISPLAYER_TYPE'] == '_') {
                     continue;
                 }
+
+                if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME'])) {
+                    $createAndUpdate[] = $field;
+                    continue;
+                }
+
                 $line = '        $form->' . $field['DISPLAYER_TYPE'] . "('{$field['COLUMN_NAME']}')";
 
                 if (in_array($field['DISPLAYER_TYPE'], ['text', 'textarea']) && preg_match('/^varchar\((\d+)\)$/i', $field['COLUMN_TYPE'], $mch)) {
@@ -459,6 +471,19 @@ class CreatorLogic
                 $line .= ';';
 
                 $this->lines[] = $line;
+            }
+
+            if (count($createAndUpdate)) {
+
+                $this->lines[] = '';
+
+                $this->lines[] = '        if ($isEdit) {';
+
+                foreach ($createAndUpdate as $timeField) {
+                    $this->lines[] = '            $form->' . $timeField['DISPLAYER_TYPE'] . "('{$timeField['COLUMN_NAME']}');";
+                }
+
+                $this->lines[] = '        }';
             }
         }
         $this->lines[] = '    }';
@@ -593,6 +618,10 @@ class CreatorLogic
                     if ($field['COLUMN_NAME'] == $formField['COLUMN_NAME']) {
                         $field['COLUMN_COMMENT'] = $formField['COLUMN_COMMENT'];
                     }
+                }
+
+                if (preg_match('/^(.+?)id$/', $field['COLUMN_COMMENT'], $mch)) {
+                    $field['COLUMN_COMMENT'] = $mch[1];
                 }
 
                 $lines[] = "    '{$field['COLUMN_NAME']}'  => '{$field['COLUMN_COMMENT']}',";
