@@ -603,7 +603,7 @@ class Dbtable extends Controller
         foreach ($fields as $field) {
             $fieldNames[] = $field['COLUMN_NAME'];
 
-            $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;overflow:auto;margin:auto auto;');
+            $table->show($field['COLUMN_NAME'], $field['COLUMN_NAME'] . '<br>' . $field['COLUMN_COMMENT'])->cut(100)->getWrapper()->addStyle('max-width:400px;max-height:100px;');
         }
 
         unset($field);
