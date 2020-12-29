@@ -126,6 +126,7 @@ class Creator extends Controller
         $form->radio('model_namespace', 'model命名空间')->options(['common' => 'app\common\model', 'admin' => 'app\admin\model'])->default('common');
         $form->text('controller', 'Controller名称')->default(ucfirst(strtolower(Str::studly($table))))->help('支持二级目录，如：shop/order');
         $form->text('controller_title', '控制器注释')->default($data['TABLE_COMMENT'])->required();
+
         $form->switchBtn('table_build', '表格生成')->default(1);
         $form->checkbox('table_toolbars', '表格工具')->options(['add' => '添加', 'delete' => '批量删除', 'export' => '导出', 'enable' => '批量禁用/启用', 'import' => '导入'])
             ->default('add,delete,export')->checkallBtn()->help('未选择任何一项则禁用工具栏');
@@ -145,11 +146,11 @@ class Creator extends Controller
             }
 
             if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
-                $field['DISPLAYER_TYPE'] = 'match';
-                $field['FIELD_RELATION'] = strtolower($table) . '[text, id]';
+                $field['DISPLAYER_TYPE'] = 'hasOne';
+                $field['FIELD_RELATION'] = 'parent.name';
             } else if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
-                $field['DISPLAYER_TYPE'] = 'match';
-                $field['FIELD_RELATION'] = strtolower($mch[1]) . '[text, id]';
+                $field['DISPLAYER_TYPE'] = 'hasOne';
+                $field['FIELD_RELATION'] = strtolower($mch[1]) . '.name';
             } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'matches';
                 $field['FIELD_RELATION'] = strtolower($mch[1]) . '[text, id]';
@@ -161,7 +162,7 @@ class Creator extends Controller
                 $field['DISPLAYER_TYPE'] = 'file';
             } else if (preg_match('/^\w*?(?:file|video|audio|pkg)s$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'files';
-            } else if (preg_match('/^is_\w+|enabled?$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^is_\w+|has_\w+|on_\w+|enabled?$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'switchBtn';
             } else if (preg_match('/^\w*?(?:status|state)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'match';
@@ -180,7 +181,7 @@ class Creator extends Controller
                 $form->text('COLUMN_TYPE', '字段类型')->readonly()->getWrapper()->addStyle('width:140px;'),
                 $form->text('COLUMN_COMMENT', '字段注释')->readonly(),
                 $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayerMap()))
-                    ->beforOptions(['_' => '无'])->required(),
+                    ->beforOptions(['_' => '无', 'hasOne' => 'hasOne'])->required(),
                 $form->checkbox('ATTR', '属性')->options(['sortable' => '排序', 'search' => '搜索']),
                 $form->text('FIELD_RELATION', '其他信息')
             )->canNotAddOrDelete();
@@ -221,7 +222,7 @@ class Creator extends Controller
                 $field['DISPLAYER_TYPE'] = 'editor';
             } else if (preg_match('/^\w*?(remark|desc|description)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'textarea';
-            } else if (preg_match('/^is_\w+|enabled?$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^is_\w+|has_\w+|on_\w+|enabled?$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'switchBtn';
             } else if (preg_match('/^\w*?(?:status|state)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'radio';
