@@ -258,7 +258,7 @@ class Dbtable extends Controller
 
         $table = $builder->table();
 
-        $table->match('type', '类型')->options(['table' => '表', 'field' => '字段'])->mapClassWhenGroup([['table', 'success'], ['field', 'info']]);
+        $table->match('type', '类型')->options(['table' => '表', 'field' => '字段'])->mapClassGroup([['table', 'success'], ['field', 'info']]);
         $table->raw('name', '名称');
         $table->show('comment', '注释');
         $table->show('delete_time', '删除时间')->getWrapper()->addStyle('width:180px');
