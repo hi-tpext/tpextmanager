@@ -10,6 +10,7 @@ use tpext\common\ExtLoader;
 use tpext\common\model\Extension as ExtensionModel;
 use tpext\common\Module as BaseModule;
 use tpext\common\TpextCore;
+use tpext\lightyearadmin\common\Resource as LightyearRes;
 use tpext\manager\common\Module;
 
 /**
@@ -59,9 +60,30 @@ class Extension extends Controller
         $search->tabLink('remote')->options([0 => '本地', 1 => '远程']);
     }
 
+    /**
+     * @title 首次预安装
+     * @return mixed
+     */
+    public function prepare()
+    {
+        $step = input('step', '0');
+        if ($step == 0) {
+            Module::getInstance()->install();
+            $next = url('/admin/extension/prepare', ['step' => 1]);
+            return "<h4>(1/2)</h4><p>安装[tpext.manager]</p><script>setTimeout(function(){location.href='{$next}'},2000);</script>";
+        } else if ($step == 1) {
+            LightyearRes::getInstance()->install();
+            $next = url('/admin/extension/prepare', ['step' => 2]);
+            return "<h4>(2/2)</h4><p>安装[lightyear.admin]</p><script>setTimeout(function(){location.href='{$next}'},2000);</script>";
+        } else {
+            $next = url('/admin/extension/index');
+            return "<h4>(预安装完成)</h4><p>即将跳转[扩展管理]页面，继续安装其他扩展</p><script>setTimeout(function(){location.href='{$next}'},3000);</script>";
+        }
+    }
+
     protected function buildDataList()
     {
-        $page = input('post.__page__/d', 1);
+        $page = input('__page__/d', 1);
         $page = $page < 1 ? 1 : $page;
 
         if ($this->isExporting) {
@@ -71,13 +93,13 @@ class Extension extends Controller
 
         $table = $this->table;
 
-        $pagesize = input('post.__pagesize__/d', 0);
+        $pagesize = input('__pagesize__/d', 0);
 
         $this->pagesize = $pagesize ?: $this->pagesize;
 
         $data = [];
 
-        $this->remote = input('post.remote');
+        $this->remote = input('remote');
 
         if ($this->remote) {
 
@@ -116,14 +138,13 @@ class Extension extends Controller
 
             if (empty($installed)) {
                 $this->builder()->notify('已安装扩展为空！请确保数据库连接正常，然后安装[tpext.manager]', 'warning', 2000);
-            }
-
-            if (!empty($installed)) {
+            } else {
                 if (!ExtensionModel::where('key', Module::class)->find()) {
-                    Module::getInstance()->install();
-                    $installed = ExtLoader::getInstalled(true);
+
+                    return $this->redirect(url('/admin/extension/prepare', ['step' => 0]));
                 }
             }
+
 
             $is_install = 0;
             $is_enable = 0;
@@ -215,8 +236,8 @@ class Extension extends Controller
             $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
 
             $table->switchBtn('enable', '启用')->autoPost(url('enable'))
-                ->mapClass(0, 'hidden', 'install')//未安装，隐藏[启用/禁用]
-                ->mapClass([Module::class, TpextCore::class], 'hidden', 'key');//特殊扩展，隐藏[启用/禁用]
+                ->mapClass(0, 'hidden', 'install') //未安装，隐藏[启用/禁用]
+                ->mapClass([Module::class, TpextCore::class], 'hidden', 'key'); //特殊扩展，隐藏[启用/禁用]
 
             $table->getToolbar()
                 ->btnRefresh();
