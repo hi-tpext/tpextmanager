@@ -213,7 +213,7 @@ class CreatorLogic
                     continue;
                 }
 
-                if ($field['DISPLAYER_TYPE'] == 'hasOne') {
+                if ($field['DISPLAYER_TYPE'] == 'belongsTo') {
                     $line = '        $table->show' . "('{$field['FIELD_RELATION']}', lang('{$field['COLUMN_NAME']}'))";
                 } else {
                     $line = '        $table->' . $field['DISPLAYER_TYPE'] . "('{$field['COLUMN_NAME']}')";

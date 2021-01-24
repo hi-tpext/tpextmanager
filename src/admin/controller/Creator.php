@@ -147,10 +147,10 @@ class Creator extends Controller
             }
 
             if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
-                $field['DISPLAYER_TYPE'] = 'hasOne';
+                $field['DISPLAYER_TYPE'] = 'belongsTo';
                 $field['FIELD_RELATION'] = 'parent.name';
             } else if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
-                $field['DISPLAYER_TYPE'] = 'hasOne';
+                $field['DISPLAYER_TYPE'] = 'belongsTo';
                 $field['FIELD_RELATION'] = strtolower($mch[1]) . '.name';
             } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'matches';
@@ -182,7 +182,7 @@ class Creator extends Controller
                 $form->text('COLUMN_TYPE', '字段类型')->readonly()->getWrapper()->addStyle('width:140px;'),
                 $form->text('COLUMN_COMMENT', '字段注释')->readonly(),
                 $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayerMap()))
-                    ->beforOptions(['_' => '无', 'hasOne' => 'hasOne'])->required(),
+                    ->beforOptions(['_' => '无', 'belongsTo' => 'belongsTo'])->required(),
                 $form->checkbox('ATTR', '属性')->options(['sortable' => '排序', 'search' => '搜索']),
                 $form->text('FIELD_RELATION', '其他信息')
             )->canNotAddOrDelete();
