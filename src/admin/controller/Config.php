@@ -58,7 +58,7 @@ class Config extends Controller
 
             $rootPath = app()->getRootPath();
 
-            $filePath = $rootPath . str_replace(['\\' . '/'], DIRECTORY_SEPARATOR, $theConfig['file']);
+            $filePath = $rootPath . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $theConfig['file']);
 
             if (!is_file($filePath)) {
                 $this->error('原始配置文件不存在：' . $theConfig['file']);
@@ -126,7 +126,7 @@ class Config extends Controller
             $rootPath = app()->getRootPath();
 
             foreach ($others as $oth) {
-                $filePath = $rootPath . str_replace(['\\' . '/'], DIRECTORY_SEPARATOR, $oth['file']);
+                $filePath = $rootPath . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $oth['file']);
                 if (!is_file($filePath)) {
                     continue;
                 }
@@ -429,12 +429,23 @@ EOT;
 
                 $field = $form->html($val);
                 $field->getWrapper()->style($val ? '' : 'visibility:hidden;height:1px;padding:0;margin:0;');
+                continue;
+
             } else if (strpos($key, '__hr__') !== false) {
 
                 $field = $form->divider($val);
-            } else if ($key == 'fieldsEnd') {
+                continue;
+
+            } else if (strpos($key, 'fieldsEnd') !== false) {
 
                 $form->fieldsEnd();
+                continue;
+
+            } else if (strpos($key, 'itemsEnd') !== false) {
+
+                $form->itemsEnd();
+                continue;
+
             } else {
 
                 $field = $form->text($key);
