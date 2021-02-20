@@ -42,6 +42,8 @@ class Config extends Controller
 
         $installed = ExtLoader::getInstalled();
 
+        $rootPath = app()->getRootPath();
+
         if (request()->isAjax()) {
             $data = request()->post();
 
@@ -55,8 +57,6 @@ class Config extends Controller
             if (!$theConfig) {
                 $this->success('不存在，重新加载配置...', url('index'));
             }
-
-            $rootPath = app()->getRootPath();
 
             $filePath = $rootPath . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $theConfig['file']);
 
@@ -79,6 +79,8 @@ class Config extends Controller
         } else {
             $tab = $builder->tab();
             $extensionsKeys = [];
+            $theConfig = null;
+
             foreach ($this->extensions as $key => $instance) {
                 $is_install = 0;
 
@@ -100,20 +102,20 @@ class Config extends Controller
                     continue;
                 }
 
-                $configData = $this->dataModel->where(['key' => $config_key])->find();
+                $theConfig = $this->dataModel->where(['key' => $config_key])->find();
 
-                if (!$configData) {
+                if (!$theConfig) {
                     $this->dataModel->create(
                         [
                             'key' => $config_key,
                             'title' => $instance->getTitle(),
-                            'file' => str_replace(app()->getRootPath(), '', $instance->configPath()),
+                            'file' => str_replace($rootPath, '', $instance->configPath()),
                             'config' => json_encode($default, JSON_UNESCAPED_UNICODE),
                         ]
                     );
                 }
 
-                $saved = $configData ? json_decode($configData['config'], 1) : [];
+                $saved = $theConfig ? json_decode($theConfig['config'], 1) : [];
                 $form = $tab->form($instance->getTitle(), $confkey == $config_key);
                 $form->formId('the-from' . $config_key);
                 $form->hidden('config_key')->value($config_key);
@@ -122,8 +124,6 @@ class Config extends Controller
             }
 
             $others = $this->dataModel->where('key', 'not in', $extensionsKeys)->select();
-
-            $rootPath = app()->getRootPath();
 
             foreach ($others as $oth) {
                 $filePath = $rootPath . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $oth['file']);
@@ -242,26 +242,45 @@ EOT;
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
 
-        $id = str_replace('-', '\\', $key);
+        $key = strtolower(str_replace('-', '_', $key));
 
-        if (!isset($this->extensions[$id])) {
-            return Builder::getInstance()->layer()->close(0, '扩展不存在！');
+        $instance = null;
+
+        if (isset($this->extensions[$key])) {
+            $instance = $this->extensions[$key];
         }
 
-        $instance = $this->extensions[$id];
+        $theConfig = $this->dataModel->where(['key' => $key])->find();
 
-        $default = $instance->defaultConfig();
+        $rootPath = app()->getRootPath();
 
-        if (empty($default)) {
-            return Builder::getInstance()->layer()->close(0, '原始配置不存在');
+        $default = [];
+
+        $title = '';
+
+        $filePath = '';
+
+        if ($theConfig) {
+            $title = $theConfig['title'];
+
+            $filePath = $rootPath . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $theConfig['file']);
+
+            $default = include $filePath;
+        } else if ($instance) {
+            $title = $instance->getTitle();
         }
 
-        $builder = Builder::getInstance('扩展管理', '配置-' . $instance->getTitle());
+        $builder = Builder::getInstance('配置管理', '配置-' . $title);
 
         if (request()->isAjax()) {
+
+            if (!is_file($filePath)) {
+                $this->error('原始配置文件不存在：' . $theConfig['file']);
+            }
+
             $data = request()->post();
 
-            $res = $this->seveConfig($default, $data, $instance->getId(), $instance->configPath());
+            $res = $this->seveConfig($default, $data, $key, $filePath);
 
             if ($res) {
                 return $builder->layer()->closeRefresh(1, '修改成功，页面即将刷新~');
@@ -271,21 +290,22 @@ EOT;
         } else {
 
             $form = $builder->form();
-
-            $configData = $this->dataModel->where(['key' => $instance->getId()])->find();
-
-            if (!$configData) {
-                $this->dataModel->create(
-                    [
-                        'key' => $instance->getId(),
-                        'title' => $instance->getTitle(),
-                        'file' => str_replace(app()->getRootPath(), '', $instance->configPath()),
-                        'config' => json_encode($default, JSON_UNESCAPED_UNICODE),
-                    ]
-                );
+            if (!$theConfig) {
+                if ($instance) {
+                    $this->dataModel->create(
+                        [
+                            'key' => $instance->getId(),
+                            'title' => $instance->getTitle(),
+                            'file' => str_replace($rootPath, '', $instance->configPath()),
+                            'config' => json_encode($default, JSON_UNESCAPED_UNICODE),
+                        ]
+                    );
+                } else {
+                    return Builder::getInstance()->layer()->close(0, '配置不存在！');
+                }
             }
 
-            $saved = $configData ? json_decode($configData['config'], 1) : [];
+            $saved = $theConfig ? json_decode($theConfig['config'], 1) : [];
 
             $this->buildConfig($form, $default, $saved);
 
