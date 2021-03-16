@@ -342,7 +342,7 @@ class CreatorLogic
         $this->lines[] = '     */';
         $this->lines[] = '    protected function filterWhere()';
         $this->lines[] = '    {';
-        $this->lines[] = '        $searchData = request()->post();';
+        $this->lines[] = '        $searchData = request()->get();';
 
         $this->lines[] = '        $where = [];';
 
