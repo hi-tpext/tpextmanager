@@ -159,6 +159,7 @@ class Extension extends Controller
             $is_install = 0;
             $is_enable = 0;
             $is_latest = 0;
+            $now_version = '';
             $k = 0;
             foreach ($extensions as $key => $instance) {
                 if (!class_exists($key)) {
@@ -174,6 +175,7 @@ class Extension extends Controller
                         $is_install = $ins['install'];
                         $is_enable = $ins['enable'];
                         $is_latest = $ins['version'] == $instance->getVersion();
+                        $now_version = $ins['version'];
                         break;
                     }
                 }
@@ -188,7 +190,7 @@ class Extension extends Controller
                     'name' => $instance->getName(),
                     'title' => $instance->getTitle(),
                     'description' => $instance->getDescription(),
-                    'version' => $instance->getVersion(),
+                    'version' => $now_version,
                     'ext_type' => $instance instanceof BaseModule ? 1 : 2,
                     'tags' => $instance->getTags(),
                     '__h_up__' => !$is_install || $is_latest,
@@ -242,7 +244,7 @@ class Extension extends Controller
             $table->getActionbar()
                 ->btnLink('view', '__data.website__', '主页', 'btn-primary', 'mdi-web', 'title="主页" target="_blank"')->getCurrent()->useLayer(false);
         } else {
-            $table->show('version', '版本号');
+            $table->show('version', '已安装版本号');
             $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
 
             $table->switchBtn('enable', '启用')->autoPost(url('enable'))
