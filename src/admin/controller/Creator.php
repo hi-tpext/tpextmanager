@@ -48,6 +48,8 @@ class Creator extends Controller
         $this->dbLogic = new DbLogic;
 
         $this->prefix = $this->dbLogic->getPrefix();
+
+        $this->sortOrder = 'TABLE_NAME ASC';
     }
 
     protected function filterWhere()
@@ -77,7 +79,7 @@ class Creator extends Controller
 
     protected function buildDataList()
     {
-        $sortOrder = input('__sort__', 'TABLE_NAME ASC');
+        $sortOrder = input('__sort__', $this->sortOrder);
         $where = $this->filterWhere();
         $table = $this->table;
 
