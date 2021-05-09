@@ -25,7 +25,7 @@ class Extension extends Controller
     use HasIndex;
     protected $extensions = [];
 
-    protected $remoteUrl = 'https://gitee.com/ichynul/myadmin/raw/5.0/extensions.json';
+    protected $remoteUrl = 'https://gitee.com/tpext/myadmin/raw/5.0/extensions.json';
 
     protected $remote = 0;
 
