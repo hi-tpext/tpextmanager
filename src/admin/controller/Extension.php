@@ -23,6 +23,7 @@ class Extension extends Controller
 {
     use HasBase;
     use HasIndex;
+
     protected $extensions = [];
 
     protected $remoteUrl = 'https://gitee.com/tpext/myadmin/raw/5.0/extensions.json';
@@ -72,22 +73,22 @@ class Extension extends Controller
         if ($step == 0) {
             Module::getInstance()->install();
             $next = url('/admin/extension/prepare', ['step' => 1]);
-            return "<h4>(1/4)</h4><p>安装[tpext.manager]，完成！</p><script>setTimeout(function(){location.href='{$next}'},2000);</script>";
+            return "<h4>(1/4)</h4><p>安装[tpext.manager]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
         } else if ($step == 1) {
             LightyearRes::getInstance()->install();
             $next = url('/admin/extension/prepare', ['step' => 2]);
-            return "<h4>(2/4)</h4><p>安装[lightyear.admin]，完成！</p><script>setTimeout(function(){location.href='{$next}'},2000);</script>";
+            return "<h4>(2/4)</h4><p>安装[lightyear.admin]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
         } else if ($step == 2) {
             builderRes::getInstance()->install();
             $next = url('/admin/extension/prepare', ['step' => 3]);
-            return "<h4>(3/4)</h4><p>安装[tpext.builder]，完成！</p><script>setTimeout(function(){location.href='{$next}'},2000);</script>";
+            return "<h4>(3/4)</h4><p>安装[tpext.builder]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
         } else if ($step == 3) {
             MdeditorRes::getInstance()->install();
             $next = url('/admin/extension/prepare', ['step' => 4]);
-            return "<h4>(4/4)</h4><p>安装[builder.mdeditor]，完成！</p><script>setTimeout(function(){location.href='{$next}'},2000);</script>";
+            return "<h4>(4/4)</h4><p>安装[builder.mdeditor]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
         } else {
             $next = url('/admin/extension/index');
-            return "<h4>(预安装完成)</h4><p>即将跳转[扩展管理]页面，继续安装其他扩展！</p><script>setTimeout(function(){location.href='{$next}'},3000);</script>";
+            return "<h4>(预安装完成)</h4><p>即将跳转[扩展管理]页面，继续安装其他扩展！</p><script>setTimeout(function(){location.href='{$next}'},1500);</script>";
         }
     }
 
