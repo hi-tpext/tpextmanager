@@ -220,6 +220,19 @@ class Config extends Controller
                     'maxSize' => ['type' => 'number', 'label' => '上传文件大小限制(MB)', 'col_size' => 6, 'size' => [3, 8], 'required' => 1],
                     'isRandName' => ['type' => 'radio', 'label' => '随机文件名', 'options' => [0 => '否', 1 => '是'], 'col_size' => 6, 'size' => [3, 8]],
                 ], //支持【tpext-builder】表单元素 ，不是太复杂的大多能满足。配置的值尽量为常规类型，如果是数组则会转换成json。
+                
+                /* 或者直接使用匿名方法的方式，更灵活自由：
+                '__config__' => function(\\tpext\\builder\\common\\Form \$form, &\$data){
+                    \$form->textarea('allowSuffix', '允许上传的文件后缀')->size(2, 10)->help('以英文,号分割');
+                    \$form->number('maxSize', '上传文件大小限制(MB)', 6)->size(3, 8)->required();
+                    \$form->number('isRandName', '随机文件名', 6)->size(3, 8)->options([0 => '否', 1 => '是']);
+                },
+                */
+                /* 定义保存时的回调，除非特殊情况
+                '__saving__' => function(\$data, \$values){
+                    // \$data 为表单提交数据,\$values为经过处理的数据
+                    return \$values;
+                },*/
             ];
             //使用 \\tpext\\common\\model\\WebConfig::config('myconfig');//不支持config('myconfig');
             </pre>
@@ -378,8 +391,11 @@ EOT;
         $table->getToolbar()
             ->btnAdd()
             ->btnDelete();
+
         $table->getActionbar()
+            ->btnView()
             ->btnDelete();
+
         $table->sortable([]);
 
         $table->useExport(false);
@@ -387,6 +403,41 @@ EOT;
         $data = $this->dataModel->order('key')->select();
 
         $table->data($data);
+    }
+
+    /**
+     * Undocumented function
+     * @title 查看设置
+     * 
+     * @return void
+     */
+    public function view($id)
+    {
+        if (request()->isGet()) {
+
+            $builder = Builder::getInstance('配置管理', '配置查看');
+
+            $data = $this->dataModel->get($id);
+            if (!$data) {
+                return $builder->layer()->close(0, '数据不存在');
+            }
+
+            $form = $builder->form();
+            $form->show('id', 'ID');
+            $form->show('key', '配置键');
+            $form->show('title', '名称');
+            $form->show('file', '路径');
+            $form->show('create_time', '添加时间');
+            $form->show('update_time', '修改时间');
+            $form->fill($data);
+
+            $form->html('config', '配置内容')->display(
+                '<pre style="white-space:pre-wrap;word-break:break-all;">{$data}</pre>',
+                ['data' => json_encode(json_decode($data['config']), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)]
+            )->size(2, 10);
+
+            return $builder->render();
+        }
     }
 
     private function buildConfig(Form &$form, $default, $saved = [])
@@ -399,7 +450,16 @@ EOT;
         $fieldType = '';
 
         if (isset($default['__config__'])) {
-            $fieldTypes = $default['__config__'];
+            $fieldTypes = $default['__config__'] ?? [];
+        }
+
+        if ($fieldTypes instanceof \Closure) {
+
+            $data = array_merge($default, $saved);
+            $fieldTypes($form, $data);
+            $form->fill($data);
+
+            return;
         }
 
         foreach ($default as $key => $val) {
@@ -450,22 +510,18 @@ EOT;
                 $field = $form->html($val);
                 $field->getWrapper()->style($val ? '' : 'visibility:hidden;height:1px;padding:0;margin:0;');
                 continue;
-
             } else if (strpos($key, '__hr__') !== false) {
 
                 $field = $form->divider($val);
                 continue;
-
             } else if (strpos($key, 'fieldsEnd') !== false) {
 
                 $form->fieldsEnd();
                 continue;
-
             } else if (strpos($key, 'itemsEnd') !== false) {
 
                 $form->itemsEnd();
                 continue;
-
             } else {
 
                 $field = $form->text($key);
@@ -481,7 +537,7 @@ EOT;
         }
     }
 
-    private function seveConfig($default, $data, $config_key, $filePath)
+    private function seveConfig($default, $data, $configKey, $filePath)
     {
         $values = [];
 
@@ -491,43 +547,58 @@ EOT;
         $fieldType = '';
 
         if (isset($default['__config__'])) {
-            $fieldTypes = $default['__config__'];
+            $fieldTypes = $default['__config__'] ?? [];
         }
 
-        foreach ($default as $key => $val) {
+        if (isset($default['__config__'])) {
+            $fieldTypes = $default['__config__'] ?? [];
+        }
 
-            if (isset($fieldTypes[$key])) {
-                $type = $fieldTypes[$key];
-                $fieldType = strtolower($type['type']);
-            }
+        if (is_array($fieldTypes)) { // __config__ 是数组的情况
 
-            if ($key == '__config__') {
-                continue;
-            }
+            foreach ($default as $key => $val) {
 
-            if (!isset($data[$key])) {
-                if (in_array($fieldType, ['checkbox', 'multipleselect'])) {
-                    $data[$key] = [];
+                if (isset($fieldTypes[$key])) {
+                    $type = $fieldTypes[$key];
+                    $fieldType = strtolower($type['type']);
+                }
+
+                if ($key == '__config__') {
+                    continue;
+                }
+
+                if (!isset($data[$key])) {
+                    if (in_array($fieldType, ['checkbox', 'multipleselect'])) {
+                        $data[$key] = [];
+                    } else {
+                        $data[$key] = '';
+                    }
+                }
+
+                if (!in_array($fieldType, ['checkbox', 'multipleselect']) && is_array($val)) {
+                    $values[$key] = json_decode($data[$key], 1);
                 } else {
-                    $data[$key] = '';
+                    $values[$key] = $data[$key];
                 }
             }
+        } else if ($fieldTypes instanceof \Closure) { // __config__ 是匿名方法的情况
 
-            if (!in_array($fieldType, ['checkbox', 'multipleselect']) && is_array($val)) {
-                $values[$key] = json_decode($data[$key], 1);
-            } else {
-                $values[$key] = $data[$key];
-            }
+            $values = $data;
         }
 
-        $this->dataModel::clearCache($config_key);
+        if (isset($default['__saving__']) && $default['__saving__'] instanceof \Closure) {
+            $__saving__ = $default['__saving__'];
+            $values = $__saving__($data, $values); //匿名方法，在数据保存前再处理一下。
+        }
 
-        if ($this->dataModel->where(['key' => $config_key])->find()) {
-            return $this->dataModel->save(['config' => json_encode($values, JSON_UNESCAPED_UNICODE)], ['key' => $config_key]);
+        $this->dataModel::clearCache($configKey);
+
+        if ($this->dataModel->where(['key' => $configKey])->find()) {
+            return $this->dataModel->save(['config' => json_encode($values, JSON_UNESCAPED_UNICODE)], ['key' => $configKey]);
         }
 
         $filePath = str_replace(app()->getRootPath(), '', $filePath);
 
-        return $this->dataModel->save(['key' => $config_key, 'file' => $filePath, 'config' => json_encode($values, JSON_UNESCAPED_UNICODE)]);
+        return $this->dataModel->save(['key' => $configKey, 'file' => $filePath, 'config' => json_encode($values, JSON_UNESCAPED_UNICODE)]);
     }
 }
