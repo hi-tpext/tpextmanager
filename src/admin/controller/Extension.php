@@ -140,7 +140,6 @@ class Extension extends Controller
             }
 
             $table->paginator(count($data), $this->pagesize);
-
         } else {
 
             $extensions = array_slice($this->extensions, ($page - 1) * $this->pagesize, $this->pagesize);
@@ -259,7 +258,13 @@ class Extension extends Controller
                 ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
                 ->btnLink('uninstall', url('uninstall', ['key' => '__data.id__']), '', 'btn-danger', 'mdi-delete', 'title="卸载"')
                 ->btnLink('setting', url('/admin/config/edit', ['key' => '__data.id__']), '', 'btn-info', 'mdi-settings', 'title="设置" data-layer-size="98%,98%"')
-                ->btnPostRowid('copyAssets', url('copyAssets'), '', 'btn-purple', 'mdi-redo', 'title="刷新资源"',
+                ->btnPostRowid(
+                    'copyAssets',
+                    url('copyAssets'),
+                    '',
+                    'btn-purple',
+                    'mdi-redo',
+                    'title="刷新资源"',
                     '刷新资源将清空并还原`/assets/`下对应扩展目录中的文件，原则上您不应该修改此目录中的任何文件或上传新文件到其中。若您这么做了，请备份到其他地方，然后再刷新资源。确定要刷新吗？'
                 )
                 ->mapClass([
@@ -457,9 +462,10 @@ class Extension extends Controller
             } else {
                 $form->show('sql', '安装脚本')->value('无');
             }
-            $form->btnSubmit('安&nbsp;&nbsp;装', 1, 'btn-success btn-loading');
-            $form->html('', '', 3)->showLabel(false);
-            $form->btnLayerClose();
+            $form->btnSubmit('安&nbsp;&nbsp;装', '1 col-lg-1 col-sm-2 col-xs-3', 'btn-success btn-loading');
+            $form->html('', '', '2 col-lg-2 col-sm-2 col-xs-2')->showLabel(false);
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '1 col-lg-1 col-sm-2 col-xs-3');
+
         } else if ($type == 2) {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql')) {
 
@@ -469,13 +475,14 @@ class Extension extends Controller
             } else {
                 $form->show('uninstall', '卸载脚本')->value('无');
             }
-            $form->btnSubmit('卸&nbsp;&nbsp;载', 1, 'btn-danger btn-loading');
-            $form->html('', '', 3)->showLabel(false);
-            $form->btnLayerClose();
+            $form->btnSubmit('卸&nbsp;&nbsp;载', '1 col-lg-1 col-sm-2 col-xs-3', 'btn-danger btn-loading');
+            $form->html('', '', '2 col-lg-2 col-sm-2 col-xs-2')->showLabel(false);
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '1 col-lg-1 col-sm-2 col-xs-3');
+
         } else if ($type == 3) {
-            $form->btnSubmit('升&nbsp;&nbsp;级', 1, 'btn-success btn-loading');
-            $form->html('', '', 3)->showLabel(false);
-            $form->btnLayerClose();
+            $form->btnSubmit('升&nbsp;&nbsp;级', '1 col-lg-1 col-sm-2 col-xs-3', 'btn-warning btn-loading');
+            $form->html('', '', '2 col-lg-2 col-sm-2 col-xs-2')->showLabel(false);
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '1 col-lg-1 col-sm-2 col-xs-3');
         }
 
         if ($isModule) {
