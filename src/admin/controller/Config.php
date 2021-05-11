@@ -436,6 +436,7 @@ EOT;
                 ['data' => json_encode(json_decode($data['config']), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)]
             )->size(2, 10);
 
+            $form->readonly();
             return $builder->render();
         }
     }
