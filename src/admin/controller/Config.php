@@ -465,7 +465,7 @@ EOT;
 
         foreach ($default as $key => $val) {
 
-            if ($key == '__config__') {
+            if ($key == '__config__' || $key == '__saving__') {
                 continue;
             }
 
@@ -564,19 +564,19 @@ EOT;
                     $fieldType = strtolower($type['type']);
                 }
 
-                if ($key == '__config__') {
+                if ($key == '__config__' || $key == '__saving__') {
                     continue;
                 }
 
                 if (!isset($data[$key])) {
-                    if (in_array($fieldType, ['checkbox', 'multipleselect'])) {
+                    if (in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox'])) {
                         $data[$key] = [];
                     } else {
                         $data[$key] = '';
                     }
                 }
 
-                if (!in_array($fieldType, ['checkbox', 'multipleselect']) && is_array($val)) {
+                if (!in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox']) && is_array($val)) {
                     $values[$key] = json_decode($data[$key], 1);
                 } else {
                     $values[$key] = $data[$key];
