@@ -569,8 +569,6 @@ class Extension extends Controller
 
         $instance->copyAssets(true);
 
-        ExtLoader::trigger('tpext_copy_assets', $ids[0]);
-
         $this->success('刷新成功');
     }
 
