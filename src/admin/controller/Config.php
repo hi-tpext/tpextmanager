@@ -417,7 +417,7 @@ EOT;
 
             $builder = Builder::getInstance('配置管理', '配置查看');
 
-            $data = $this->dataModel->get($id);
+            $data = $this->dataModel->find($id);
             if (!$data) {
                 return $builder->layer()->close(0, '数据不存在');
             }
