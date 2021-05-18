@@ -456,17 +456,12 @@ class Extension extends Controller
         $form->raw('tags', '类型')->value($instance->getTags());
         $form->raw('desc', '介绍')->value($instance->getDescription());
         $form->raw('version', '版本号')->value($instance->getVersion());
-
         if ($type == 1) {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'install.sql')) {
                 $form->show('sql', '安装脚本')->value('安装将运行SQL脚本');
             } else {
                 $form->show('sql', '安装脚本')->value('无');
             }
-            $form->btnSubmit('安&nbsp;&nbsp;装', '1 col-lg-1 col-sm-2 col-xs-3', 'btn-success btn-loading');
-            $form->html('', '', '2 col-lg-2 col-sm-2 col-xs-2')->showLabel(false);
-            $form->btnLayerClose('返&nbsp;&nbsp;回', '1 col-lg-1 col-sm-2 col-xs-3');
-
         } else if ($type == 2) {
             if (is_file($instance->getRoot() . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql')) {
 
@@ -476,14 +471,6 @@ class Extension extends Controller
             } else {
                 $form->show('uninstall', '卸载脚本')->value('无');
             }
-            $form->btnSubmit('卸&nbsp;&nbsp;载', '1 col-lg-1 col-sm-2 col-xs-3', 'btn-danger btn-loading');
-            $form->html('', '', '2 col-lg-2 col-sm-2 col-xs-2')->showLabel(false);
-            $form->btnLayerClose('返&nbsp;&nbsp;回', '1 col-lg-1 col-sm-2 col-xs-3');
-
-        } else if ($type == 3) {
-            $form->btnSubmit('升&nbsp;&nbsp;级', '1 col-lg-1 col-sm-2 col-xs-3', 'btn-warning btn-loading');
-            $form->html('', '', '2 col-lg-2 col-sm-2 col-xs-2')->showLabel(false);
-            $form->btnLayerClose('返&nbsp;&nbsp;回', '1 col-lg-1 col-sm-2 col-xs-3');
         }
 
         if ($isModule) {
@@ -518,6 +505,19 @@ class Extension extends Controller
         $form->raw('LICENSE')->size(0, 12)->showLabel(false)->value($LICENSE);
 
         $form->ajax(false);
+
+        if ($type == 1) {
+            $form->btnSubmit('安&nbsp;&nbsp;装', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success btn-loading');
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
+
+        } else if ($type == 2) {
+            $form->btnSubmit('卸&nbsp;&nbsp;载', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-danger btn-loading');
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
+            
+        } else if ($type == 3) {
+            $form->btnSubmit('升&nbsp;&nbsp;级', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-warning btn-loading');
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
+        }
     }
 
     /**
