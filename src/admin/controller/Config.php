@@ -574,12 +574,12 @@ EOT;
                     } else {
                         $data[$key] = '';
                     }
-                }
-
-                if (!in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox']) && is_array($val)) {
-                    $values[$key] = json_decode($data[$key], 1);
                 } else {
-                    $values[$key] = $data[$key];
+                    if (!in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox']) && is_array($val)) {
+                        $values[$key] = json_decode($data[$key], 1);
+                    } else {
+                        $values[$key] = $data[$key];
+                    }
                 }
             }
         } else if ($fieldTypes instanceof \Closure) { // __config__ 是匿名方法的情况
