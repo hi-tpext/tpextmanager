@@ -156,8 +156,7 @@ class CreatorLogic
         $this->lines[] = '';
 
         $this->lines[] = '/**';
-        $this->lines[] = ' * tpextmanager 生成于' . date('Y-m-d H:i:s');
-        $this->lines[] = ' * Undocumented class';
+        $this->lines[] = ' * @time tpextmanager 生成于' . date('Y-m-d H:i:s');
         $this->lines[] = ' * @title ' . $controllerTitle;
         $this->lines[] = ' */';
 
@@ -185,6 +184,16 @@ class CreatorLogic
         $this->lines[] = "        \$this->pageTitle = '{$controllerTitle}';";
         $this->lines[] = "        \$this->selectTextField = '{id}#{name}';";
         $this->lines[] = "        \$this->selectSearch = 'name';";
+
+        $tableToolbars = $data['table_toolbars'] ?? [];
+        $tableActions = $data['table_actions'] ?? [];
+
+        if (in_array('enable', $tableToolbars) || in_array('enable', $tableActions)) {
+            $this->lines[] = '';
+            $enable_field = $data['enable_field'] ?: 'enable';
+            $this->lines[] = "        \$this->enableField = '{$enable_field}';";
+        }
+
         $this->lines[] = '';
         $this->lines[] = "        Lang::load(app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['app', 'admin', 'lang', config('lang.default_lang'), '" . strtolower($modelName) . "' . '.php']));";
         $this->lines[] = '    }';
@@ -365,7 +374,6 @@ class CreatorLogic
 
                         $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '<=', \$searchData['{$field['COLUMN_NAME']}_end']];";
                         $this->lines[] = '        }';
-
                     } else {
 
                         $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}']) && \$searchData['{$field['COLUMN_NAME']}'] != '') {";
@@ -373,13 +381,12 @@ class CreatorLogic
                         if (preg_match('/varchar|text/i', $field['COLUMN_TYPE'])) {
                             $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', 'like', '%' . \$searchData['{$field['COLUMN_NAME']}'] . '%'];";
                         } else {
-                            $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', 'eq', \$searchData['{$field['COLUMN_NAME']}']];";
+                            $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '=', \$searchData['{$field['COLUMN_NAME']}']];";
                         }
 
                         $this->lines[] = '        }';
                     }
                 }
-
             }
         }
 
@@ -572,12 +579,14 @@ class CreatorLogic
      *
      * @param string $modelNamespace
      * @param string $table
-     * @param string $solft_delete
+     * @param array $data
      * @return array
      */
-    public function getModelLines($modelNamespace, $table, $solft_delete)
+    public function getModelLines($modelNamespace, $table, $data)
     {
         $modelName = Str::studly($table);
+
+        $tableTitle = $data['controller_title'];
 
         $lines = [];
         $lines[] = "<?php";
@@ -586,21 +595,21 @@ class CreatorLogic
         $lines[] = '';
         $lines[] = "use think\Model;";
 
-        if ($solft_delete) {
+        if ($data['solft_delete'] == 1) {
             $lines[] = "use think\Model\concern\SoftDelete;";
         }
 
         $lines[] = '';
 
         $lines[] = '/**';
-        $lines[] = ' * tpextmanager 生成于' . date('Y-m-d H:i:s');
-        $lines[] = ' * Undocumented class';
+        $lines[] = ' * @time tpextmanager 生成于' . date('Y-m-d H:i:s');
+        $lines[] = ' * @title ' . $tableTitle;
         $lines[] = ' */';
 
         $lines[] = 'class ' . $modelName . ' extends Model';
         $lines[] = '{';
 
-        if ($solft_delete) {
+        if ($data['solft_delete'] == 1) {
             $lines[] = "use SoftDelete;";
         }
         $lines[] = "    //protected \$name = '{$table}'";
@@ -623,10 +632,13 @@ class CreatorLogic
     {
         $lines = [];
 
+        $tableTitle = $data['controller_title'];
+
         $lines[] = "<?php";
         $lines[] = '';
         $lines[] = '/**';
-        $lines[] = ' * tpextmanager 生成于' . date('Y-m-d H:i:s');
+        $lines[] = ' * @time tpextmanager 生成于' . date('Y-m-d H:i:s');
+        $lines[] = ' * @title ' . $tableTitle;
         $lines[] = ' */';
         $lines[] = '';
         $lines[] = "return [";
@@ -651,7 +663,6 @@ class CreatorLogic
                     $lines[] = "    '{$field['COLUMN_NAME']}_start'  => '{$field['COLUMN_COMMENT']}起',";
                     $lines[] = "    '{$field['COLUMN_NAME']}_end'  => '{$field['COLUMN_COMMENT']}止',";
                 }
-
             }
         }
         $lines[] = '];';
