@@ -92,23 +92,18 @@ class Extension extends Controller
         }
     }
 
-    protected function buildDataList()
+    /**
+     * 生成数据，如数据不是从`$this->dataModel`得来，比如使用join,或以一个数组为数据源，可以重写此方法
+     *
+     * @param array $where
+     * @param string $sortOrder
+     * @param int $page
+     * @return array|\think\Collection|\Generator
+     */
+    protected function queryList($where, $sortOrder, $page)
     {
-        $page = input('__page__/d', 1);
-        $page = $page < 1 ? 1 : $page;
-
-        if ($this->isExporting) {
-            $page = 1;
-            $this->pagesize = PHP_INT_MAX;
-        }
-
-        $table = $this->table;
-
-        $pagesize = input('__pagesize__/d', 0);
-
-        $this->pagesize = $pagesize ?: $this->pagesize;
-
         $data = [];
+        $total = 0;
 
         $this->remote = input('remote');
 
@@ -138,8 +133,7 @@ class Extension extends Controller
                     }
                 }
             }
-
-            $table->paginator(count($data), $this->pagesize);
+            $total = count($data);
         } else {
 
             $extensions = array_slice($this->extensions, ($page - 1) * $this->pagesize, $this->pagesize);
@@ -207,13 +201,10 @@ class Extension extends Controller
                 $k += 1;
             }
 
-            $table->paginator(count($this->extensions), $this->pagesize);
+            $total = count($data);
         }
 
-        $this->buildTable($data);
-        $table->fill($data);
-
-        return $data;
+        return [$data, $total];
     }
 
     /**
@@ -509,11 +500,9 @@ class Extension extends Controller
         if ($type == 1) {
             $form->btnSubmit('安&nbsp;&nbsp;装', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success btn-loading');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
-
         } else if ($type == 2) {
             $form->btnSubmit('卸&nbsp;&nbsp;载', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-danger btn-loading');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
-            
         } else if ($type == 3) {
             $form->btnSubmit('升&nbsp;&nbsp;级', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-warning btn-loading');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
