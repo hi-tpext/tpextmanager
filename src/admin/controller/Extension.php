@@ -93,14 +93,16 @@ class Extension extends Controller
     }
 
     /**
-     * 生成数据，如数据不是从`$this->dataModel`得来，比如使用join,或以一个数组为数据源，可以重写此方法
+     * 生成数据，如数据不是从`$this->dataModel`得来时，可重写此方法
+     * 比如使用db()助手方法、多表join、或以一个自定义数组为数据源
      *
      * @param array $where
      * @param string $sortOrder
-     * @param int $page
+     * @param integer $page
+     * @param integer $total
      * @return array|\think\Collection|\Generator
      */
-    protected function queryList($where, $sortOrder, $page)
+    protected function buildDataList($where = [], $sortOrder = '', $page = 1, &$total = -1)
     {
         $data = [];
         $total = 0;
@@ -204,7 +206,7 @@ class Extension extends Controller
             $total = count($data);
         }
 
-        return [$data, $total];
+        return $data;
     }
 
     /**

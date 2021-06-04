@@ -77,17 +77,21 @@ class Creator extends Controller
         $search->text('kwd', '表名/表注释', 4)->maxlength(55);
     }
 
-    protected function buildDataList()
+    /**
+     * 生成数据，如数据不是从`$this->dataModel`得来时，可重写此方法
+     * 比如使用db()助手方法、多表join、或以一个自定义数组为数据源
+     *
+     * @param array $where
+     * @param string $sortOrder
+     * @param integer $page
+     * @param integer $total
+     * @return array|\think\Collection|\Generator
+     */
+    protected function buildDataList($where = [], $sortOrder = '', $page = 1, &$total = -1)
     {
-        $sortOrder = input('__sort__', $this->sortOrder);
-        $where = $this->filterWhere();
-        $table = $this->table;
-
         $data = $this->dbLogic->getTables('TABLE_NAME,CREATE_TIME,TABLE_COMMENT,TABLE_ROWS,AUTO_INCREMENT', $where, $sortOrder);
 
-        $this->buildTable($data);
-        $table->fill($data);
-        $table->sortOrder($sortOrder);
+        $total = count($data);
 
         return $data;
     }
