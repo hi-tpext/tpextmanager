@@ -51,6 +51,8 @@ class Creator extends Controller
         $this->prefix = config('database.prefix');
 
         $this->sortOrder = 'TABLE_NAME ASC';
+
+        $this->pagesize = 9999; //不产生分页
     }
 
     protected function filterWhere()
@@ -146,9 +148,11 @@ class Creator extends Controller
             $field['ATTR'] = ['search'];
             $field['FIELD_RELATION'] = '';
 
-            if ($this->dbLogic->isInteger($field['DATA_TYPE'])
+            if (
+                $this->dbLogic->isInteger($field['DATA_TYPE'])
                 || $this->dbLogic->isDecimal($field['DATA_TYPE'])
-                || (preg_match('/^.*(date|time)$/', $field['COLUMN_NAME']))) {
+                || (preg_match('/^.*(date|time)$/', $field['COLUMN_NAME']))
+            ) {
                 $field['ATTR'][] = 'sortable';
             }
 
@@ -259,7 +263,6 @@ class Creator extends Controller
                 $form->checkbox('ATTR', '属性')->options(['required' => '必填']),
                 $form->text('FIELD_RELATION', '其他信息')
             )->canNotAddOrDelete();
-
     }
 
     /**
