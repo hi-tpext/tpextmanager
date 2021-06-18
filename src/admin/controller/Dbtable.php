@@ -45,6 +45,8 @@ class Dbtable extends Controller
         $this->prefix = $this->dbLogic->getPrefix();
 
         $this->sortOrder = 'TABLE_NAME ASC';
+
+        $this->pagesize = 9999; //不产生分页
     }
 
     protected function filterWhere()
