@@ -229,7 +229,7 @@ class CreatorLogic
         $this->lines[] = '     * @param array $data';
         $this->lines[] = '     * @return mixed';
         $this->lines[] = '     */';
-        $this->lines[] = '    protected function buildTable(&$data = [])';
+        $this->lines[] = '    protected function buildTable(&$data = [], $isExporting = false)';
         $this->lines[] = '    {';
         $this->lines[] = '        $table = $this->table;';
         $this->lines[] = '';
@@ -244,7 +244,7 @@ class CreatorLogic
                 }
 
                 if ($field['DISPLAYER_TYPE'] == 'belongsTo') {
-                    $line = '        $table->show' . "('{$field['FIELD_RELATION']}', lang('{$field['COLUMN_NAME']}'))";
+                    $line = '        $table->show' . "('{$field['COLUMN_NAME']}')->to('{{$field['COLUMN_NAME']}}#{{$field['FIELD_RELATION']}}')";
                 } else {
                     $line = '        $table->' . $field['DISPLAYER_TYPE'] . "('{$field['COLUMN_NAME']}')";
                 }
