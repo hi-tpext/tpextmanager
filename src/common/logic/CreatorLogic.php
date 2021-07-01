@@ -358,7 +358,7 @@ class CreatorLogic
                         $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}']) && \$searchData['{$field['COLUMN_NAME']}'] != '') {";
 
                         if (preg_match('/varchar|text/i', $field['COLUMN_TYPE'])) {
-                            $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', 'like', '%' . \$searchData['{$field['COLUMN_NAME']}'] . '%'];";
+                            $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', 'like', '%' . trim(\$searchData['{$field['COLUMN_NAME']}']) . '%'];";
                         } else {
                             $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '=', \$searchData['{$field['COLUMN_NAME']}']];";
                         }

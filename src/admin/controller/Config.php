@@ -547,6 +547,8 @@ EOT;
         $type = '';
         $fieldType = '';
 
+        unset($data['__token__']);
+
         if (isset($default['__config__'])) {
             $fieldTypes = $default['__config__'] ?? [];
         }
