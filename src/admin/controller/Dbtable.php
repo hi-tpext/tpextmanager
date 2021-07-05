@@ -630,6 +630,8 @@ class Dbtable extends Controller
         if (!empty($pk) && is_string($pk)) {
             $table->getActionbar()
                 ->btnView(url('dataview', ['name' => $name, 'id' => "__data.{$pk}__", 'pk' => $pk]));
+        } else {
+            $table->useActionbar(false);
         }
 
         $table->useCheckbox(false);
