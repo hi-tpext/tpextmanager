@@ -44,7 +44,7 @@ class Config extends Controller
 
         $rootPath = app()->getRootPath();
 
-        if (request()->isPost()) {
+        if (request()->isPut()) {
             $data = request()->post();
 
             if (!isset($data['config_key'])) {
