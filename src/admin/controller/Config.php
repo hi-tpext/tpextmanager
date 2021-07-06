@@ -44,7 +44,7 @@ class Config extends Controller
 
         $rootPath = app()->getRootPath();
 
-        if (request()->isAjax()) {
+        if (request()->isPost()) {
             $data = request()->post();
 
             if (!isset($data['config_key'])) {
@@ -399,6 +399,7 @@ EOT;
         $table->sortable([]);
 
         $table->useExport(false);
+        $table->useChooseColumns(false);
 
         $data = $this->dataModel->order('key')->select();
 
