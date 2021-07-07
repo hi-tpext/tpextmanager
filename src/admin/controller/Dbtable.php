@@ -566,11 +566,11 @@ class Dbtable extends Controller
 
         $errors = array_merge($errors, $this->dbLogic->getErrors());
 
-        if (empty($errors)) {
-            return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        if (!empty($errors)) {
+            $this->error('保存失败-'. implode('<br>', $errors));
         }
 
-        return $this->builder()->layer()->closeRefresh(0, implode('<br>', $errors));
+        return $this->builder()->layer()->closeRefresh(1, '保存成功');
     }
 
     /**
