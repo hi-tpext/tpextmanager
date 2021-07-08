@@ -162,7 +162,7 @@ class Dbtable extends Controller
                 ['id' => 'update_time', 'COLUMN_NAME' => 'update_time', 'COLUMN_COMMENT' => '更新时间', 'DATA_TYPE' => 'datetime', 'LENGTH' => 0, 'ATTR' => '', '__can_delete__' => 1],
             ];
             //预设字段，在此处就不允许再添加其他字段了。
-            $form->items('fields', '字段信息')->dataWithId($pkdata)->canAdd(false)->size(2, 10)->cnaDelete(false)
+            $form->items('fields', '字段信息')->dataWithId($pkdata)->canAdd(false)->size(2, 10)
                 ->with(
                     $form->text('COLUMN_NAME', '字段名')->required(),
                     $form->text('COLUMN_COMMENT', '注释')->required(),
