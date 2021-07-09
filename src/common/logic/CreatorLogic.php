@@ -478,7 +478,11 @@ class CreatorLogic
                     continue;
                 }
 
-                $line = '        $form->' . $field['DISPLAYER_TYPE'] . "('{$field['COLUMN_NAME']}')";
+                if ($field['DISPLAYER_TYPE'] == 'belongsTo') {
+                    $line = '        $form->show' . "('{$field['COLUMN_NAME']}')->to('{{$field['COLUMN_NAME']}}#{{$field['FIELD_RELATION']}}')";
+                } else {
+                    $line = '        $form->' . $field['DISPLAYER_TYPE'] . "('{$field['COLUMN_NAME']}')";
+                }
 
                 if (in_array($field['DISPLAYER_TYPE'], ['text', 'textarea']) && preg_match('/^varchar\((\d+)\)$/i', $field['COLUMN_TYPE'], $mch)) {
                     $line .= '->maxlength(' . $mch[1] . ')';

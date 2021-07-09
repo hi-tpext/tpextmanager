@@ -211,7 +211,11 @@ class Dbtable extends Controller
             $this->error('保存失败' . $this->dbLogic->getErrorsText());
         }
 
-        return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        if ($id) {
+            return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        }
+        
+        $this->success('新建表成功', url('fieldlist', ['name' => $data['TABLE_NAME']]), ['script' => '<script>parent.$(".search-refresh").trigger("click");</script>'], 1);
     }
 
     /**
@@ -567,7 +571,7 @@ class Dbtable extends Controller
         $errors = array_merge($errors, $this->dbLogic->getErrors());
 
         if (!empty($errors)) {
-            $this->error('保存失败-'. implode('<br>', $errors));
+            $this->error('保存失败-' . implode('<br>', $errors));
         }
 
         return $this->builder()->layer()->closeRefresh(1, '保存成功');
