@@ -191,7 +191,7 @@ class Creator extends Controller
                 $form->text('COLUMN_NAME', '字段名')->readonly(),
                 $form->text('COLUMN_TYPE', '字段类型')->readonly()->getWrapper()->addStyle('width:140px;'),
                 $form->text('COLUMN_COMMENT', '字段注释')->readonly(),
-                $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayerMap()))
+                $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayersMap()))
                     ->beforOptions(['_' => '无', 'belongsTo' => 'belongsTo'])->required(),
                 $form->checkbox('ATTR', '属性')->options(['sortable' => '排序', 'search' => '搜索']),
                 $form->text('FIELD_RELATION', '其他信息')
@@ -258,24 +258,11 @@ class Creator extends Controller
                 $form->text('COLUMN_NAME', '字段名')->readonly(),
                 $form->text('COLUMN_TYPE', '字段类型')->readonly()->getWrapper()->addStyle('width:140px;'),
                 $form->text('COLUMN_COMMENT', '字段注释')->required(),
-                $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayerMap()))
-                    ->beforOptions(['_' => '无'])->required(),
+                $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayersMap()))
+                    ->beforOptions(['_' => '无', 'belongsTo' => 'belongsTo'])->required(),
                 $form->checkbox('ATTR', '属性')->options(['required' => '必填']),
                 $form->text('FIELD_RELATION', '其他信息')
             )->canNotAddOrDelete();
-    }
-
-    /**
-     * Undocumented function
-     *
-     * @title 字段关系
-     * @return mixed
-     */
-    public function relation()
-    {
-        $prev_ele_id = str_replace('form-DISPLAYER_TYPE', '', input('prev_ele_id'));
-
-        return json(Wrapper::getDisplayerMap());
     }
 
     /**
