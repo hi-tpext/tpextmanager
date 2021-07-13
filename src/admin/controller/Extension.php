@@ -14,6 +14,7 @@ use tpext\common\TpextCore;
 use tpext\lightyearadmin\common\Resource as LightyearRes;
 use tpext\builder\mdeditor\common\Resource as MdeditorRes;
 use tpext\manager\common\Module;
+use tpext\manager\common\logic\ExtensionLogic;
 
 /**
  * Undocumented class
@@ -40,6 +41,10 @@ class Extension extends Controller
     protected function initialize()
     {
         $this->pageTitle = '扩展管理';
+
+        $logic = new ExtensionLogic;
+
+        $logic->getExtendExtensions(true);
 
         ExtLoader::clearCache();
 
@@ -115,6 +120,8 @@ class Extension extends Controller
 
             $data = $data ? json_decode($data, 1) : [];
 
+            $total = count($data);
+
             $data = array_slice($data, ($page - 1) * $this->pagesize, $this->pagesize);
 
             foreach ($data as &$d) {
@@ -135,8 +142,9 @@ class Extension extends Controller
                     }
                 }
             }
-            $total = count($data);
         } else {
+
+            $total = count($this->extensions);
 
             $extensions = array_slice($this->extensions, ($page - 1) * $this->pagesize, $this->pagesize);
 
@@ -202,8 +210,6 @@ class Extension extends Controller
 
                 $k += 1;
             }
-
-            $total = count($data);
         }
 
         return $data;
@@ -315,7 +321,7 @@ class Extension extends Controller
                     $text[] = $err->getMessage();
                 }
 
-                $builder->content()->display('<h5>执行出错：</h5>:' . implode('<br>', $text));
+                $builder->content()->display('<h5>执行出错：</h5>' . implode('<br>', $text));
 
                 return $builder->render();
             }
