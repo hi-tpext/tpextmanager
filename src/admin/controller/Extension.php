@@ -27,7 +27,7 @@ class Extension extends Controller
 
     protected $extensions = [];
 
-    protected $remoteUrl = 'https://gitee.com/tpext/myadmin/raw/5.0/extensions.json';
+    protected $remoteUrl = 'https://gitee.com/tpext/extensions/raw/main/extensions.json';
 
     protected $remote = 0;
 
@@ -124,11 +124,15 @@ class Extension extends Controller
 
             $data = array_slice($data, ($page - 1) * $this->pagesize, $this->pagesize);
 
+            $installed = ExtLoader::getInstalled(true);
+
             foreach ($data as &$d) {
 
                 $d['ext_type'] = $d['type'] == 'module' ? 1 : 2;
 
                 $d['download'] = 0;
+                $d['install'] = 0;
+                $d['now_version'] = '';
 
                 foreach ($this->extensions as $key => $instance) {
 
@@ -138,9 +142,19 @@ class Extension extends Controller
 
                     if ($instance->getName() == $d['name']) {
                         $d['download'] = 1;
+                        $d['now_version'] = $instance->getVersion();
+                        foreach ($installed as $ins) {
+                            if ($ins['key'] == $key) {
+                                $d['install'] = $ins['install'];
+                                break;
+                            }
+                        }
                         break;
                     }
                 }
+                $extend_download = $d['extend_download'] && preg_match('/^https?:\/\/.+?\.zip$/i', $d['extend_download']);
+                $d['__h_up__'] = $d['now_version'] == $d['version'] || !$extend_download || !$d['download'];
+                $d['__h_dwn__'] = $d['now_version'] == $d['version'] || !$extend_download || $d['download'];
             }
         } else {
 
@@ -158,7 +172,6 @@ class Extension extends Controller
                     return $this->redirect(url('/admin/extension/prepare', ['step' => 0]));
                 }
             }
-
 
             $is_install = 0;
             $is_enable = 0;
@@ -236,12 +249,36 @@ class Extension extends Controller
         $table->show('description', '介绍')->getWrapper()->addStyle('width:40%;');
 
         if ($this->remote) {
+            $table->show('now_version', '已下载版本号');
+            $table->show('version', '最新版本号');
             $table->match('download', '下载')->options([0 => '未下载', 1 => '已下载'])->mapClassGroup([[0, 'default'], [1, 'success']]);
+            $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
             $table->show('composer', 'Composer');
             $table->show('platform', 'TP版本支持');
             $table->match('is_free', '免费')->options([1 => '是', 0 => '否']);
             $table->getActionbar()
-                ->btnLink('view', '__data.website__', '主页', 'btn-primary', 'mdi-web', 'title="主页" target="_blank"')->getCurrent()->useLayer(false);
+                ->btnLink(
+                    'update',
+                    url('update', ['name' => '__data.name__', 'now_version' => '__data.now_version__']),
+                    '',
+                    'btn-warning',
+                    'mdi-autorenew',
+                    'title="更新"'
+                )
+                ->btnLink(
+                    'download',
+                    url('download', ['name' => '__data.name__']),
+                    '',
+                    'btn-info',
+                    'mdi-cloud-download',
+                    'title="下载"'
+                )
+                ->mapClass([
+                    'update' => ['hidden' => '__h_up__'],
+                    'download' => ['hidden' => '__h_dwn__']
+                ])
+                ->btnLink('view', '__data.website__', '', 'btn-primary', 'mdi-web', 'title="主页" target="_blank"')
+                ->getCurrent()->useLayer(false);
         } else {
             $table->show('version', '已安装版本号');
             $table->match('install', '安装')->options([0 => '未安装', 1 => '已安装'])->mapClassGroup([[0, 'default'], [1, 'success']]);
@@ -369,7 +406,7 @@ class Extension extends Controller
                     $text[] = $err->getMessage();
                 }
 
-                $builder->content()->display('<h5>执行出错：</h5>:' . implode('<br>', $text));
+                $builder->content()->display('<h5>执行出错：</h5>' . implode('<br>', $text));
 
                 return $builder->render();
             }
@@ -417,13 +454,236 @@ class Extension extends Controller
                     $text[] = $err->getMessage();
                 }
 
-                $builder->content()->display('<h5>执行出错：</h5>:' . implode('<br>', $text));
+                $builder->content()->display('<h5>执行出错：</h5>' . implode('<br>', $text));
 
                 return $builder->render();
             }
         } else {
             $form = $builder->form();
             $this->detail($form, $instance, 3);
+            return $builder->render();
+        }
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @title 更新远程扩展
+     * @return mixed
+     */
+    public function update($name = '', $now_version = '')
+    {
+        if (empty($name)) {
+            return Builder::getInstance()->layer()->close(0, '参数有误！' . $name);
+        }
+
+        $list = file_get_contents($this->remoteUrl);
+
+        $list = $list ? json_decode($list, 1) : [];
+
+        $data = null;
+
+        foreach ($list as $li) {
+            if ($li['name'] == $name) {
+                $data = $li;
+                break;
+            }
+        }
+
+        if (!$data) {
+            return Builder::getInstance()->layer()->close(0, '扩展不存在-' . $name);
+        }
+
+        $data['now_version'] = $now_version;
+
+        $builder = Builder::getInstance('扩展管理', '更新-' . $data['title']);
+
+        if (request()->isPost()) {
+
+            $this->checkToken();
+
+            $logic = new ExtensionLogic;
+
+            $updateRes = $logic->download($data['extend_download'], 2);
+
+            if (!$updateRes) {
+
+                $errors = $logic->getErrors();
+
+                $builder->content()->display('<h5>下载解压时出错：</h5>' . implode('<br>', $errors));
+                return $builder->render();
+            }
+
+            $logic->getExtendExtensions(true);
+
+            ExtLoader::clearCache();
+
+            ExtLoader::bindExtensions();
+
+            $this->extensions = ExtLoader::getExtensions();
+
+            $findInstance = null;
+            $findKey = null;
+            $findInstall = false;
+
+            foreach ($this->extensions as $key => $instance) {
+
+                if (!class_exists($key)) {
+                    continue;
+                }
+
+                if ($instance->getName() == $name) {
+                    $findInstance = $instance;
+                    $findKey = $key;
+                    break;
+                }
+            }
+
+            if (!$findInstance) {
+                $builder->content()->display('<h5>执行出错：</h5>未匹配到扩展');
+                return $builder->render();
+            }
+
+            $installed = ExtLoader::getInstalled(true);
+
+            foreach ($installed as $ins) {
+                if ($ins['key'] == $findKey) {
+                    $findInstall = $ins['install'];
+                    break;
+                }
+            }
+
+            $findKey = str_replace('\\', '-', $findKey);
+
+            if ($findInstall) {
+                $upgradeUrl = url('upgrade', ['key' => $findKey])->__toString();
+
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $upgradeUrl . '">点此去升级<a/></h5>');
+            } else {
+                $installUrl = url('install', ['key' => $findKey])->__toString();
+
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5>');
+            }
+
+            return $builder->render();
+        } else {
+
+            $form = $builder->form();
+            $form->show('title', '名称');
+            $form->show('name', '标识');
+            $form->match('is_free', '免费')->options([1 => '是', 0 => '否']);
+            $form->show('platform', 'TP版本支持');
+            $form->show('change', '版本')->to('{now_version} => {version}');
+            $form->show('extend_download', '压缩包地址');
+
+            $form->fill($data);
+            $form->ajax(false);
+
+            $form->btnSubmit('更&nbsp;&nbsp;新', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success btn-loading');
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
+
+            return $builder->render();
+        }
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @title 新下载远程扩展
+     * @return mixed
+     */
+    public function download($name)
+    {
+        if (empty($name)) {
+            return Builder::getInstance()->layer()->close(0, '参数有误！');
+        }
+
+        $list = file_get_contents($this->remoteUrl);
+
+        $list = $list ? json_decode($list, 1) : [];
+
+        $data = null;
+
+        foreach ($list as $li) {
+            if ($li['name'] == $name) {
+                $data = $li;
+                break;
+            }
+        }
+
+        if (!$data) {
+            return Builder::getInstance()->layer()->close(0, '扩展不存在-' . $name);
+        }
+
+        $builder = Builder::getInstance('扩展管理', '下载-' . $data['title']);
+
+        if (request()->isPost()) {
+
+            $this->checkToken();
+
+            $logic = new ExtensionLogic;
+
+            $updateRes = $logic->download($data['extend_download'], 1);
+
+            if (!$updateRes) {
+
+                $errors = $logic->getErrors();
+
+                $builder->content()->display('<h5>下载解压时出错：</h5>' . implode('<br>', $errors));
+                return $builder->render();
+            }
+
+            $logic->getExtendExtensions(true);
+
+            ExtLoader::clearCache();
+
+            ExtLoader::bindExtensions();
+
+            $this->extensions = ExtLoader::getExtensions();
+
+            $findInstance = null;
+            $findKey = null;
+
+            foreach ($this->extensions as $key => $instance) {
+
+                if (!class_exists($key)) {
+                    continue;
+                }
+
+                if ($instance->getName() == $name) {
+                    $findInstance = $instance;
+                    $findKey = $key;
+                    break;
+                }
+            }
+
+            if (!$findInstance) {
+                $builder->content()->display('<h5>执行出错：</h5>未匹配到扩展');
+                return $builder->render();
+            }
+
+            $findKey = str_replace('\\', '-', $findKey);
+
+            $installUrl = url('install', ['key' => $findKey])->__toString();
+
+            $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5>');
+            return $builder->render();
+        } else {
+
+            $form = $builder->form();
+            $form->show('title', '名称');
+            $form->show('name', '标识');
+            $form->match('is_free', '免费')->options([1 => '是', 0 => '否']);
+            $form->show('platform', 'TP版本支持');
+            $form->show('version', '版本');
+            $form->show('extend_download', '压缩包地址');
+
+            $form->fill($data);
+            $form->ajax(false);
+
+            $form->btnSubmit('下&nbsp;&nbsp;载', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success btn-loading');
+            $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
+
             return $builder->render();
         }
     }
