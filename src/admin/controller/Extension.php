@@ -129,7 +129,7 @@ class Extension extends Controller
             foreach ($data as &$d) {
 
                 $d['ext_type'] = $d['type'] == 'module' ? 1 : 2;
-
+                $d['id'] = str_replace('.', '-', $d['name']);
                 $d['download'] = 0;
                 $d['install'] = 0;
                 $d['now_version'] = '';
@@ -259,7 +259,7 @@ class Extension extends Controller
             $table->getActionbar()
                 ->btnLink(
                     'update',
-                    url('update', ['name' => '__data.name__', 'now_version' => '__data.now_version__']),
+                    url('update', ['key' => '__data.id__', 'now_version' => '__data.now_version__']),
                     '',
                     'btn-warning',
                     'mdi-autorenew',
@@ -267,7 +267,7 @@ class Extension extends Controller
                 )
                 ->btnLink(
                     'download',
-                    url('download', ['name' => '__data.name__']),
+                    url('download', ['key' => '__data.id__']),
                     '',
                     'btn-info',
                     'mdi-cloud-download',
@@ -471,11 +471,13 @@ class Extension extends Controller
      * @title 更新远程扩展
      * @return mixed
      */
-    public function update($name = '', $now_version = '')
+    public function update($key = '', $now_version = '')
     {
-        if (empty($name)) {
-            return Builder::getInstance()->layer()->close(0, '参数有误！' . $name);
+        if (empty($key)) {
+            return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
+
+        $name = str_replace('-', '.', $key);
 
         $list = file_get_contents($this->remoteUrl);
 
@@ -592,11 +594,13 @@ class Extension extends Controller
      * @title 新下载远程扩展
      * @return mixed
      */
-    public function download($name)
+    public function download($key)
     {
-        if (empty($name)) {
+        if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
+
+        $name = str_replace('-', '.', $key);
 
         $list = file_get_contents($this->remoteUrl);
 
