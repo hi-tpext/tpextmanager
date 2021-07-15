@@ -171,9 +171,8 @@ class ExtensionLogic
                 if (is_dir($sonDir)) {
                     $extends = array_merge($extends, $this->scanExtends($sonDir));
                 } else {
-                    $sonDir = str_replace('/', '\\', $sonDir);
 
-                    if (preg_match('/.+?\\\extend\\\(.+?)\.php$/i', $sonDir, $mtches)) {
+                    if (preg_match('/.+?\\\extend\\\(.+?)\.php$/i', str_replace('/', '\\', $sonDir), $mtches)) {
 
                         $content = file_get_contents($sonDir); //通过文件内容判断是否为扩展。class_exists方式的$autoload有点问题
 
