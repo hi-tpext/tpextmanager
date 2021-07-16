@@ -542,7 +542,7 @@ class Extension extends Controller
             }
 
             if (!$findInstance) {
-                $builder->content()->display('<h5>执行出错：</h5>未匹配到扩展');
+                $builder->content()->display('<h5>执行出错：</h5>未匹配到扩展<script>parent.$(".search-refresh").trigger("click");</script>');
                 return $builder->render();
             }
 
@@ -560,11 +560,11 @@ class Extension extends Controller
             if ($findInstall) {
                 $upgradeUrl = url('upgrade', ['key' => $findKey])->__toString();
 
-                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $upgradeUrl . '">点此去升级<a/></h5>');
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $upgradeUrl . '">点此去升级<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>');
             } else {
                 $installUrl = url('install', ['key' => $findKey])->__toString();
 
-                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5>');
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>');
             }
 
             return $builder->render();
@@ -662,7 +662,7 @@ class Extension extends Controller
             }
 
             if (!$findInstance) {
-                $builder->content()->display('<h5>执行出错：</h5>未匹配到扩展');
+                $builder->content()->display('<h5>执行出错：</h5>未匹配到扩展<script>parent.$(".search-refresh").trigger("click");</script>');
                 return $builder->render();
             }
 
@@ -670,7 +670,7 @@ class Extension extends Controller
 
             $installUrl = url('install', ['key' => $findKey])->__toString();
 
-            $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5>');
+            $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>');
             return $builder->render();
         } else {
 
