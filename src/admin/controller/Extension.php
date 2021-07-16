@@ -3,6 +3,7 @@
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
+use think\facade\Config;
 use tpext\builder\common\Builder;
 use tpext\builder\common\Module as builderRes;
 use tpext\builder\traits\actions\HasBase;
@@ -69,6 +70,154 @@ class Extension extends Controller
     }
 
     /**
+     * @title 数据库配置
+     * @return mixed
+     */
+    public function dbconfig()
+    {
+        if (request()->isPost()) {
+
+            $data = request()->post();
+
+            $result = $this->validate($data, [
+                'hostname|域名或ip' => 'require',
+                'hostport|端口' => 'require|number',
+                'method|方式' => 'require',
+                'username|账户名' => 'require',
+                'password|密码' => 'require',
+                'database|数据库名' => 'require',
+                'charset|数据库编码' => 'require',
+            ]);
+
+            if (true !== $result) {
+
+                $this->error($result);
+            }
+
+            session('dbconfig', $data);
+
+            if ($data['method'] == 1) {
+
+                $result = $this->validate($data, [
+                    'new_username|新账户名' => 'require',
+                    'new_password|密码' => 'require',
+                    're_new_password|确认密码' => 'require'
+                ]);
+
+                if (true !== $result) {
+
+                    $this->error($result);
+                }
+
+                if ($data['new_password'] != $data['re_new_password']) {
+                    $this->error('两次输入密码不匹配');
+                }
+
+                $createDb = $data['database'];
+
+                $data['type'] = 'mysql';
+                $data['database'] = 'mysql';
+
+                $config = array_merge(Config::pull('database'), $data);
+
+                try {
+                    db('', $config)->query('SELECT TABLE_NAME FROM information_schema.tables');
+                } catch (\Throwable $e) {
+                    trace($e->__toString());
+                    $this->error('连接数据库失败-' . $e->getMessage());
+                }
+
+                try {
+                    db('', $config, false)->query("CREATE DATABASE IF NOT EXISTS {$createDb}");
+                } catch (\Throwable $e) {
+                    trace($e->__toString());
+                    $this->error('连创建据库失败-' . $e->getMessage());
+                }
+
+                try {
+                    //创建用户授权到数据库
+                    db('', $config, false)->query("GRANT ALL PRIVILEGES ON {$createDb}.* to '{$data['new_username']}'@'{$data['hostname']}' identified by '{$data['new_password']}';");
+
+                    db('', $config, false)->query("FLUSH PRIVILEGES;");
+                } catch (\Throwable $e) {
+                    trace($e->__toString());
+                    $this->error('创建新用户授权失败-' . $e->getMessage());
+                }
+                //切换
+                $data['database'] = $createDb;
+                $data['username'] = $data['new_username'];
+                $data['password'] = $data['new_password'];
+            } else {
+                $data['type'] = 'mysql';
+                $config = array_merge(Config::pull('database'), $data);
+
+                try {
+                    db('', $config)->query('SELECT TABLE_NAME FROM information_schema.tables');
+                } catch (\Throwable $e) {
+                    trace($e->__toString());
+                    $this->error('连接数据库失败-' . $e->getMessage());
+                }
+            }
+            //配置信息写入文件
+            try {
+                $databaseStr = file_get_contents(app()->getConfigPath() . 'database.php');
+
+                $replace = ['hostname', 'database', 'username', 'password', 'hostport', 'charset', 'prefix'];
+
+                foreach ($replace as $rep) {
+                    $val = $data[$rep];
+                    $databaseStr = preg_replace('/([\'\"]' . $rep . '[\'\"]\s*=>\s*)[\'\"][^\'\"]*?[\'\"]/', "$1'{$val}'", $databaseStr);
+                }
+
+                file_put_contents(app()->getConfigPath() . 'database.php', $databaseStr);
+            } catch (\Throwable $e) {
+                trace($e->__toString());
+                $this->error('写入配置信息到文件失败-' . $e->getMessage());
+            }
+            $this->success('数据库配置成功', url('prepare'), 1);
+        } else {
+            $builder = Builder::getInstance('扩展管理', '数据库配置');
+
+            $builder->content(3)->display('');
+
+            $form = $builder->form(6);
+            $form->show('type', '数据库类型')->value('mysql');
+            $form->text('hostname', '域名或ip')->default('127.0.0.1')->help('如:127.0.0.1、localhost')->required();
+            $form->text('hostport', '端口')->default('3306')->required();
+            $form->radio('method', '方式')
+                ->options([1 => '使用root创建新的账户和数据库', 2 => '使用已存在的账户和数据库'])
+                ->required()
+                ->default(1)
+                ->when(1)->with(
+                    $form->text('username', 'root账户')->default('root')->help('超级账户名，root或其他有创建新用户和数据库高级权限的账户')->required(),
+                    $form->password('password', 'root密码')->required(),
+                    $form->text('new_username', '新账户名')->help('由英文字母数、字或、下划线组成')->required(),
+                    $form->password('new_password', '密码')->required(),
+                    $form->password('re_new_password', '确认密码')->required()
+                )
+                ->when(2)->with(
+                    $form->text('username', '账户名')->help('由英文字母数、字或、下划线组成。为了数据安全不建议直接使用root账号连接')->required(),
+                    $form->password('password', '密码')->required()
+                );
+            $form->text('database', '数据库名')->help('由英文字母数、字或、下划线组成，如果数据库已存在，则直接使用。')->required();
+            $form->text('prefix', '表前缀')->default('tp_');
+            $form->radio('charset', '数据库编码')->texts(['utf8', 'utf8mb4'])->default('utf8')->required();
+
+            $url = url('prepare');
+            $form->raw('tips', '提示')->value('<p>数据库配置信息将保存在<b>`config/database.php`</b>文件中，请确保程序对此文件有可写权限。'
+                . '如果您不想通过此程序修改配置，请手动修改数据库配置文件，<a href="' . $url . '">后点此进入</a>下一步，如果仍然回到此页面，请检查配置。</p>');
+
+            $data = session('dbconfig');
+
+            if ($data) {
+                $form->fill($data);
+            }
+
+            return $builder->render();
+        }
+    }
+
+    /**
      * @title 首次预安装
      * @return mixed
      */
@@ -76,6 +225,22 @@ class Extension extends Controller
     {
         $step = input('step', '0');
         if ($step == 0) {
+            try {
+                db()->query('select TABLE_NAME from information_schema.tables');
+            } catch (\Throwable $e) {
+                $msg = $e->getMessage();
+                if (preg_match('/SQLSTATE\[HY000\]/i', $msg)) {
+                    LightyearRes::getInstance()->copyAssets();
+                    builderRes::getInstance()->copyAssets();
+
+                    $next = url('/admin/extension/dbconfig');
+
+                    return "<h4>提示</h4><p>数据库连接失败，请配置数据库。</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
+                } else {
+                    echo $msg;
+                }
+            }
+            session('dbconfig', null);
             Module::getInstance()->install();
             $next = url('/admin/extension/prepare', ['step' => 1]);
             return "<h4>(1/4)</h4><p>安装[tpext.manager]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
