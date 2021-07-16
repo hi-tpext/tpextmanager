@@ -50,35 +50,7 @@ class ExtensionLogic
      */
     public function download($url, $install = 1)
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
-        curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0");
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HEADER, TRUE);
-        curl_setopt($ch, CURLOPT_NOBODY, FALSE);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-        curl_setopt($ch, CURLOPT_MAXREDIRS, 2);/*指定最多的HTTP重定向的数量，这个选项是和CURLOPT_FOLLOWLOCATION一起使用的*/
-
-        $ssl = preg_match('/^https:\/\//i', $url);
-        if ($ssl) {
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); // https请求 不验证证书和hosts
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE); // 不从证书中检查SSL加密算法是否存在
-        }
-
-        $response = curl_exec($ch);
-
-        $body = '';
-        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == '200') {
-            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE); //头信息size
-            $body = substr($response, $headerSize);
-        }
-
-        curl_close($ch);
+        $body = file_get_contents($url);
 
         $file = time() . '_' . mt_rand(100, 999) . '.zip';
 
