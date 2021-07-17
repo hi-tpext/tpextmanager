@@ -101,17 +101,12 @@ class Extension extends Controller
 
                 $result = $this->validate($data, [
                     'new_username|新账户名' => 'require',
-                    'new_password|密码' => 'require',
-                    're_new_password|确认密码' => 'require'
+                    'new_password|密码' => 'require'
                 ]);
 
                 if (true !== $result) {
 
                     $this->error($result);
-                }
-
-                if ($data['new_password'] != $data['re_new_password']) {
-                    $this->error('两次输入密码不匹配');
                 }
 
                 $createDb = $data['database'];
@@ -209,27 +204,43 @@ class Extension extends Controller
             $builder->content(3)->display('');
 
             $form = $builder->form(6);
-            $form->show('type', '数据库类型')->value('mysql');
-            $form->text('hostname', '域名或ip')->default('127.0.0.1')->help('如:127.0.0.1、localhost')->required();
-            $form->text('hostport', '端口')->default('3306')->required();
+            $form->defaultDisplayerSize(12, 12);
+
+            $form->fields('db_type', ' ')->showLabel(false)->with(
+                $form->show('type', '数据库类型', 6)->value('MySQL/MairaDB'),
+                $form->radio('charset', '数据库编码', 6)->texts(['utf8', 'utf8mb4'])->default('utf8')->required()
+            );
+
+            $form->fields('host_port', ' ')->showLabel(false)->with(
+                $form->text('hostname', '域名或ip', 6)->default('127.0.0.1')->help('如:127.0.0.1、localhost')->required(),
+                $form->text('hostport', '端口', 6)->default('3306')->required()
+            );
+
             $form->radio('method', '方式')
                 ->options([1 => '使用root创建新的账户和数据库', 2 => '使用已存在的账户和数据库'])
                 ->required()
                 ->default(1)
                 ->when(1)->with(
-                    $form->text('username', 'root账户')->default('root')->help('超级账户名，root或其他有创建新用户和数据库高级权限的账户')->required(),
-                    $form->password('password', 'root密码')->required(),
-                    $form->text('new_username', '新账户名')->help('由英文字母数、字或、下划线组成')->required(),
-                    $form->password('new_password', '密码')->required(),
-                    $form->password('re_new_password', '确认密码')->required()
+                    $form->fields('root_user_pwd', ' ')->showLabel(false)->with(
+                        $form->text('username', 'root账户', 6)->default('root')->help('超级账户名，root或其他有创建新用户和数据库高级权限的账户')->required(),
+                        $form->password('password', 'root密码', 6)->required()
+                    ),
+                    $form->fields('new_user_pwd', ' ')->showLabel(false)->with(
+                        $form->text('new_username', '新账户名', 6)->help('由英文字母数、字或、下划线组成')->required(),
+                        $form->password('new_password', '密码', 6)->required()
+                    )
                 )
                 ->when(2)->with(
-                    $form->text('username', '账户名')->help('由英文字母数、字或、下划线组成。为了数据安全不建议直接使用root账号连接')->required(),
-                    $form->password('password', '密码')->required()
+                    $form->fields('host_port', ' ')->showLabel(false)->with(
+                        $form->text('username', '账户名', 6)->help('由英文字母数、字或、下划线组成。为了数据安全不建议直接使用root账号连接')->required(),
+                        $form->password('password', '密码', 6)->required()
+                    )
                 );
-            $form->text('database', '数据库名')->help('由英文字母数、字或、下划线组成，如果数据库已存在，则直接使用。')->required();
-            $form->text('prefix', '表前缀')->default('tp_');
-            $form->radio('charset', '数据库编码')->texts(['utf8', 'utf8mb4'])->default('utf8')->required();
+
+            $form->fields('host_port', ' ')->showLabel(false)->with(
+                $form->text('database', '数据库名', 6)->help('由英文字母数、字或、下划线组成，如果数据库已存在，则直接使用。')->required(),
+                $form->text('prefix', '表前缀', 6)->default('tp_')
+            );
 
             $url = url('prepare');
             $form->raw('tips', '提示')->value('<p>数据库配置信息将保存在<b>`config/database.php`</b>文件中，请确保程序对此文件有可写权限。'
