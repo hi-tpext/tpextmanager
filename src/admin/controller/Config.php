@@ -137,6 +137,7 @@ class Config extends Controller
                 $form = $tab->form($oth['title'], $confkey == $oth['key']);
                 $form->formId('the-from' . $oth['key']);
                 $form->hidden('config_key')->value($oth['key']);
+                $form->method('put');
                 $this->buildConfig($form, $default, $saved);
                 $form->html('', '配置键')->value("<pre>" . $oth['key'] . "</pre>")->size(2, 8);
             }
