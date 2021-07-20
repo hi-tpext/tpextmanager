@@ -464,9 +464,6 @@ class Extension extends Controller
                 ->mapClass(0, 'hidden', 'install') //未安装，隐藏[启用/禁用]
                 ->mapClass([Module::class, TpextCore::class], 'hidden', 'key'); //特殊扩展，隐藏[启用/禁用]
 
-            $table->getToolbar()
-                ->btnRefresh();
-
             $table->getActionbar()
                 ->btnLink('upgrade', url('upgrade', ['key' => '__data.id__']), '', 'btn-success', 'mdi-arrow-up-bold-circle', 'title="升级"')
                 ->btnLink('install', url('install', ['key' => '__data.id__']), '', 'btn-primary', 'mdi-plus', 'title="安装"')
@@ -490,6 +487,9 @@ class Extension extends Controller
                 ]);
         }
 
+        $table->getToolbar()
+            ->btnImport(url('import'), 'zip', ['400px', '250px'], 20, 'zip包上传')
+            ->btnRefresh();
         $table->useCheckbox(false);
     }
 
@@ -867,6 +867,39 @@ class Extension extends Controller
 
             return $builder->render();
         }
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @title zip包上传
+     * @return mixed
+     */
+    public function import()
+    {
+        $fileurl = input('get.fileurl');
+
+        $logic = new ExtensionLogic;
+
+        $builder = Builder::getInstance();
+
+        $installRes = $logic->installExtend('.' . $fileurl, 1);
+
+        if (!$installRes) {
+
+            $errors = $logic->getErrors();
+
+            $builder->content()->display('<h5>解压安装包时出错：</h5>' . implode('<br>', $errors));
+            return $builder->render();
+        }
+
+        $logic->getExtendExtensions(true);
+
+        ExtLoader::clearCache();
+
+        ExtLoader::bindExtensions();
+
+        return $builder->layer()->closeRefresh(2, '上传成功');
     }
 
     /**

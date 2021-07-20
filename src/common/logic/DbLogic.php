@@ -342,12 +342,13 @@ class DbLogic
 
         try {
 
+            $after = empty($info['MOVE_AFTER']) || $info['MOVE_AFTER'] == $info['COLUMN_NAME'] ? '' : " after `{$info['MOVE_AFTER']}`";
             if ($fieldName == $info['COLUMN_NAME']) {
-                $sql = "ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'";
+                $sql = "ALTER TABLE `{$tableName}` modify `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'$after";
                 $sqls[] = $sql;
                 Db::execute($sql);
             } else {
-                $sql = "ALTER TABLE `{$tableName}` change `{$fieldName}` `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'";
+                $sql = "ALTER TABLE `{$tableName}` change `{$fieldName}` `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'$after";
                 $sqls[] = $sql;
                 Db::execute($sql);
             }
@@ -380,7 +381,6 @@ class DbLogic
             }
 
             return true;
-
         } catch (\Exception $ex) {
 
             foreach ($sqls as $s) {
@@ -513,7 +513,6 @@ class DbLogic
 
                 $default = "DEFAULT '{$default}'";
             }
-
         } else if ($isInteger || $isDecimal) {
 
             if ($unsigned) {
