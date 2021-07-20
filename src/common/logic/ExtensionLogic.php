@@ -80,6 +80,7 @@ class ExtensionLogic
     {
         if (!preg_match('/.+?\.zip$/i', $zipFilePath)) {
             trace('不是zip文件：' . $zipFilePath);
+            $this->errors[] = '不是zip文件：' . $zipFilePath;
             return false;
         }
 
@@ -101,11 +102,20 @@ class ExtensionLogic
                     mkdir($dir, 0775, true);
                 }
 
-                if ($install == 1 && is_dir($dir . $extendName)) {
-                    trace('扩展目录已存在');
-                    $this->errors[] = '扩展目录已存在';
+                $extendPath = $dir . $extendName;
+
+                if ($install == 1 && is_dir($extendPath)) {
+                    trace('扩展目录已存在：/extend/' . $extendName . '，可能是扩展重复，或不同的两个扩展目录冲突');
+                    $this->errors[] = '扩展目录已存在：/extend/' . $extendName . '，可能是扩展重复，或不同的两个扩展目录冲突';
 
                     return false;
+                }
+
+                if ($install == 2 && is_dir($extendPath)) { //更新已存在的扩展，备份
+                    $zipBackup = new \ZipArchive();
+                    $zipBackup->open($dir . rtrim($extendName, '/') . '_bak' . date('YmdHis') . '.zip', \ZipArchive::CREATE);
+                    $this->addExtendsFilesToZip($zipBackup, $extendPath, $extendName);
+                    $zipBackup->close();
                 }
 
                 $res =  $zip->extractTo($dir);
@@ -123,11 +133,54 @@ class ExtensionLogic
         }
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param \ZipArchive $zipHandler
+     * @param string $path
+     * @return void
+     */
+    protected function addExtendsFilesToZip($zipHandler, $path, $sub_dir = '')
+    {
+        if (!is_dir($path)) {
+            return [];
+        }
+
+        $dir = opendir($path);
+
+        $sonDir = null;
+
+        while (false !== ($file = readdir($dir))) {
+
+            if (($file != '.') && ($file != '..') && ($file != '.git')) {
+
+                $sonDir = $path . DIRECTORY_SEPARATOR . $file;
+
+                if (is_dir($sonDir)) {
+                    $this->addExtendsFilesToZip($zipHandler, $sonDir, $sub_dir . $file . '/');
+                } else {
+
+                    $zipHandler->addFile($sonDir, $sub_dir . $file);  //向压缩包中添加文件
+                }
+            }
+        }
+        closedir($dir);
+        unset($sonDir);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $path
+     * @param array $extends
+     * @return array
+     */
     protected function scanExtends($path, $extends = [])
     {
         if (!is_dir($path)) {
             return [];
         }
+
         $dir = opendir($path);
 
         $reflectionClass = null;
@@ -136,7 +189,7 @@ class ExtensionLogic
 
         while (false !== ($file = readdir($dir))) {
 
-            if (($file != '.') && ($file != '..')) {
+            if (($file != '.') && ($file != '..') && ($file != '.git')) {
 
                 $sonDir = $path . DIRECTORY_SEPARATOR . $file;
 
@@ -161,6 +214,8 @@ class ExtensionLogic
                 }
             }
         }
+
+        closedir($dir);
 
         unset($reflectionClass, $sonDir);
 

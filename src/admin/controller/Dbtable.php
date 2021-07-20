@@ -214,7 +214,7 @@ class Dbtable extends Controller
         if ($id) {
             return $this->builder()->layer()->closeRefresh(1, '保存成功');
         }
-        
+
         $this->success('新建表成功', url('fieldlist', ['name' => $data['TABLE_NAME']]), ['script' => '<script>parent.$(".search-refresh").trigger("click");</script>'], 1);
     }
 
@@ -244,7 +244,7 @@ class Dbtable extends Controller
         unset($d);
 
         $table->getToolbar()
-            ->btnAdd()
+            ->btnAdd('', '', 'btn-primary', 'mdi-plus', 'data-layer-size="1200px,98%"')
             ->btnRefresh()
             ->btnToggleSearch()
             ->btnLink(url('trash'), '回收站', 'btn-danger', 'mdi-delete-variant');
@@ -467,6 +467,8 @@ class Dbtable extends Controller
 
         $keys = [];
 
+        $moveTo = [];
+
         foreach ($fields as &$field) {
             if ($this->dbLogic->isInteger($field['DATA_TYPE']) || $this->dbLogic->isDecimal($field['DATA_TYPE']) || $this->dbLogic->isChartext($field['DATA_TYPE'])) {
                 $field['LENGTH'] = preg_replace('/^\w+\((\d+).+?$/', '$1', $field['COLUMN_TYPE']);
@@ -509,6 +511,8 @@ class Dbtable extends Controller
             } else {
                 $field['COLUMN_DEFAULT'] = trim($field['COLUMN_DEFAULT'], "'");
             }
+
+            $moveTo[$field['COLUMN_NAME']] = $field['COLUMN_NAME'] . '后';
         }
 
         unset($keys, $field);
@@ -517,12 +521,13 @@ class Dbtable extends Controller
             ->with(
                 $form->text('COLUMN_NAME', '字段名')->required(),
                 $form->text('COLUMN_COMMENT', '字段注释')->required(),
-                $form->select('DATA_TYPE', '数据类型')->options($this->dbLogic::$FIELD_TYPES)->required()->default('varchar')->getWrapper()->addStyle('width:160px;'),
-                $form->text('LENGTH', '长度')->default(0)->getWrapper()->addStyle('width:100px;'),
-                $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWrapper()->addStyle('width:100px;'),
+                $form->select('DATA_TYPE', '数据类型')->options($this->dbLogic::$FIELD_TYPES)->required()->default('varchar')->getWrapper()->addStyle('width:120px;'),
+                $form->text('LENGTH', '长度')->default(0)->getWrapper()->addStyle('width:80px;'),
+                $form->text('NUMERIC_SCALE', '小数点')->default(0)->getWrapper()->addStyle('width:60px;'),
                 $form->text('COLUMN_DEFAULT', '默认值')->default(''),
-                $form->switchBtn('IS_NULLABLE', '可空')->getWrapper()->addStyle('width:100px;'),
-                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:220px;')
+                $form->switchBtn('IS_NULLABLE', '可空')->getWrapper()->addStyle('width:70px;'),
+                $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:200px;'),
+                $form->select('MOVE_AFTER', '移动到')->placeholder('移动字段')->options($moveTo)->getWrapper()->addStyle('width:180px;')
             );
 
         return $builder->render();
@@ -574,7 +579,7 @@ class Dbtable extends Controller
             $this->error('保存失败-' . implode('<br>', $errors));
         }
 
-        return $this->builder()->layer()->closeRefresh(1, '保存成功');
+        $this->success('保存成功，页面即将刷新~', null, ['script' => '<script>parent.$(".search-refresh").trigger("click");</script>'], 1);
     }
 
     /**

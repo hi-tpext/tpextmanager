@@ -254,9 +254,7 @@ class CreatorLogic
                     if ($field['DISPLAYER_TYPE'] == 'text') {
                         $line .= "->getWrapper()->addStyle('max-width:140px;')";
                     }
-                }
-
-                if (in_array($field['DISPLAYER_TYPE'], ['match', 'maches'])) {
+                } else if (in_array($field['DISPLAYER_TYPE'], ['match', 'maches'])) {
                     if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(\\think\\facade\\Db::name('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
@@ -486,13 +484,17 @@ class CreatorLogic
 
                 if (in_array($field['DISPLAYER_TYPE'], ['text', 'textarea']) && preg_match('/^varchar\((\d+)\)$/i', $field['COLUMN_TYPE'], $mch)) {
                     $line .= '->maxlength(' . $mch[1] . ')';
-                }
-
-                if (in_array($field['DISPLAYER_TYPE'], ['select', 'multipleSelect'])) {
+                } else if (in_array($field['DISPLAYER_TYPE'], ['select', 'multipleSelect'])) {
                     if (!empty($field['FIELD_RELATION'])) {
                         $line .= "->dataUrl(url('{$field['FIELD_RELATION']}'))";
                     } else {
                         $line .= "->dataUrl(url('selectpage'))";
+                    }
+                } else if (in_array($field['DISPLAYER_TYPE'], ['match', 'maches'])) {
+                    if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
+                        $line .= "->optionsData(db('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
+                    } else {
+                        $line .= "->optionsData(db('table_name')->select(), 'text')/*请修改table_name为关联表名*/";
                     }
                 }
 
