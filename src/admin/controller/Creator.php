@@ -145,13 +145,18 @@ class Creator extends Controller
 
         foreach ($fields as &$field) {
             $field['DISPLAYER_TYPE'] = 'show';
-            $field['ATTR'] = ['search'];
+
+            if (!preg_match('/^(?:updated?_time|updated?_at)$/', $field['COLUMN_NAME']) && !in_array($field['COLUMN_NAME'], ['id', 'sort'])) {
+                $field['ATTR'] = ['search'];
+            }
+
             $field['FIELD_RELATION'] = '';
 
             if (
                 $this->dbLogic->isInteger($field['DATA_TYPE'])
                 || $this->dbLogic->isDecimal($field['DATA_TYPE'])
                 || (preg_match('/^.*(date|time)$/', $field['COLUMN_NAME']))
+                || $field['COLUMN_NAME'] == 'sort'
             ) {
                 $field['ATTR'][] = 'sortable';
             }
