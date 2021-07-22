@@ -237,9 +237,16 @@ class CreatorLogic
 
             $line = '';
             $sortable = [];
+            $createAndUpdate = [];
+
             foreach ($data['TABLE_FIELDS'] as $field) {
 
                 if (empty($field['DISPLAYER_TYPE']) || $field['DISPLAYER_TYPE'] == '_') {
+                    continue;
+                }
+
+                if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME'])) {
+                    $createAndUpdate[] = $field;
                     continue;
                 }
 
@@ -270,6 +277,16 @@ class CreatorLogic
 
                 $this->lines[] = $line;
             }
+
+            if (count($createAndUpdate)) {
+
+                $this->lines[] = '';
+
+                foreach ($createAndUpdate as $timeField) {
+                    $this->lines[] = '        $table->' . $timeField['DISPLAYER_TYPE'] . "('{$timeField['COLUMN_NAME']}');";
+                }
+            }
+
             $this->lines[] = '';
             $sline = [];
             $sline[] = '        $table->getToolbar()';
