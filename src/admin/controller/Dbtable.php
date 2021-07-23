@@ -527,7 +527,11 @@ class Dbtable extends Controller
                 $form->text('COLUMN_DEFAULT', '默认值')->default(''),
                 $form->switchBtn('IS_NULLABLE', '可空')->getWrapper()->addStyle('width:70px;'),
                 $form->checkbox('ATTR', '属性')->options(['index' => '索引', 'unique' => '唯一', 'unsigned' => '非负'])->getWrapper()->addStyle('width:200px;'),
-                $form->select('MOVE_AFTER', '移动到')->placeholder('移动字段')->options($moveTo)->getWrapper()->addStyle('width:180px;')
+                $form->select('MOVE_AFTER', '移动到')->placeholder('移动字段')->rendering(function ($field) use ($moveTo) {
+                    $options = $moveTo;
+                    unset($options[$field->data['COLUMN_NAME']]); //自身字段名从选项中移除
+                    $field->options($options);
+                })->getWrapper()->addStyle('width:180px;')
             );
 
         return $builder->render();
