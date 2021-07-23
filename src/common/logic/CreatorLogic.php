@@ -184,6 +184,9 @@ class CreatorLogic
         $this->lines[] = "        \$this->pageTitle = '{$controllerTitle}';";
         $this->lines[] = "        \$this->selectTextField = '{id}#{name}';";
         $this->lines[] = "        \$this->selectSearch = 'name';";
+        $this->lines[] = "        \$this->pk = 'id'";
+        $this->lines[] = "        \$this->pagesize = 14;";
+        $this->lines[] = "        \$this->sortOrder = 'id desc';";
 
         $tableToolbars = $data['table_toolbars'] ?? [];
         $tableActions = $data['table_actions'] ?? [];
@@ -635,7 +638,7 @@ class CreatorLogic
         if ($data['solft_delete'] == 1) {
             $lines[] = "use SoftDelete;";
         }
-        $lines[] = "    //protected \$name = '{$table}'";
+        $lines[] = "    protected \$name = '{$table}'";
         $lines[] = '';
         $lines[] = '    protected $autoWriteTimestamp = \'datetime\';';
         $lines[] = '';
