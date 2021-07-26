@@ -268,7 +268,7 @@ class CreatorLogic
                         $line .= "->getWrapper()->addStyle('max-width:140px;')";
                     }
                 } else if (in_array($field['DISPLAYER_TYPE'], ['match', 'maches'])) {
-                    if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
+                    if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+),\s*(\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(\\think\\facade\\Db::name('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
                         $line .= "->options([/*选项*/]);";
@@ -508,8 +508,8 @@ class CreatorLogic
                         $line .= "->dataUrl(url('selectpage'))";
                     }
                 } else if (in_array($field['DISPLAYER_TYPE'], ['match', 'maches'])) {
-                    if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
-                        $line .= "->optionsData(db('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
+                    if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+),\s*(\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
+                        $line .= "->optionsData(\\think\\facade\\Db::name('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
                         $line .= "->options([/*选项*/]);";
                     }
