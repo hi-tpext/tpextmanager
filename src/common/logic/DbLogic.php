@@ -336,7 +336,9 @@ class DbLogic
         $sql = '';
 
         try {
-            $sql = "ALTER TABLE `{$tableName}` add `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'";
+
+            $after = empty($info['MOVE_AFTER']) || $info['MOVE_AFTER'] == $info['COLUMN_NAME'] ? '' : " after `{$info['MOVE_AFTER']}`";
+            $sql = "ALTER TABLE `{$tableName}` add `{$info['COLUMN_NAME']}` $attr COMMENT '{$info['COLUMN_COMMENT']}'$after";
             $sqls[] = $sql;
             Db::execute($sql);
 
