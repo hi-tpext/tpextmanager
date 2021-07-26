@@ -248,7 +248,7 @@ class CreatorLogic
                     if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(db('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
-                        $line .= "->optionsData(db('table_name')->select(), 'text')/*请修改table_name为关联表名*/";
+                        $line .= "->options([/*选项*/]);";
                     }
                 }
 
