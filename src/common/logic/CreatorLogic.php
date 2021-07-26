@@ -93,11 +93,13 @@ class CreatorLogic
      * Undocumented function
      *
      * @param array $data
+     * @param string $prefix
+     * @param string $modelNamespace
      * @return void
      */
-    public function make($data)
+    public function make($data, $prefix, $modelNamespace)
     {
-        $this->begin($data);
+        $this->begin($data, $prefix, $modelNamespace);
 
         if ($data['table_build']) {
             $this->buildSearch($data);
@@ -117,15 +119,16 @@ class CreatorLogic
      * Undocumented function
      *
      * @param array $data
+     * @param string $prefix
+     * @param string $modelNamespace
      * @return void
      */
-    public function begin($data)
+    public function begin($data, $prefix, $modelNamespace)
     {
-        $table = preg_replace('/^' . $this->prefix . '(.+)$/', '$1', $data['TABLE_NAME']);
+        $table = preg_replace('/^' . $prefix . '(.+)$/', '$1', $data['TABLE_NAME']);
 
         $controllerNamespace = '';
         $controllerName = '';
-        $modelNamespace = '';
 
         if (preg_match('/^\w+$/', $data['controller'])) {
             $controllerNamespace = 'app\\admin\\controller';
@@ -135,7 +138,7 @@ class CreatorLogic
             $controllerName = ucfirst(strtolower(Str::studly($mch[2])));
         }
 
-        if ($data['model_namespace'] == 'common') {
+        if ($modelNamespace == 'common') {
             $modelNamespace = 'app\\common\\model\\';
         } else {
             $modelNamespace = 'app\\admin\\model\\';
@@ -184,7 +187,7 @@ class CreatorLogic
         $this->lines[] = "        \$this->pageTitle = '{$controllerTitle}';";
         $this->lines[] = "        \$this->selectTextField = '{id}#{name}';";
         $this->lines[] = "        \$this->selectSearch = 'name';";
-        $this->lines[] = "        \$this->pk = 'id'";
+        $this->lines[] = "        \$this->pk = 'id';";
         $this->lines[] = "        \$this->pagesize = 14;";
         $this->lines[] = "        \$this->sortOrder = 'id desc';";
 
@@ -282,9 +285,6 @@ class CreatorLogic
             }
 
             if (count($createAndUpdate)) {
-
-                $this->lines[] = '';
-
                 foreach ($createAndUpdate as $timeField) {
                     $this->lines[] = '        $table->' . $timeField['DISPLAYER_TYPE'] . "('{$timeField['COLUMN_NAME']}');";
                 }
@@ -379,15 +379,12 @@ class CreatorLogic
 
                 if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
-                    $this->lines[] = '';
-
                     if (preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
                         $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}_start']) && \$searchData['{$field['COLUMN_NAME']}_start'] != '') {";
 
                         $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '>=', \$searchData['{$field['COLUMN_NAME']}_start']];";
                         $this->lines[] = '        }';
 
-                        $this->lines[] = '';
                         $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}_end']) && \$searchData['{$field['COLUMN_NAME']}_end'] != '') {";
 
                         $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '<=', \$searchData['{$field['COLUMN_NAME']}_end']];";
@@ -514,7 +511,7 @@ class CreatorLogic
                     if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(db('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
-                        $line .= "->optionsData(db('table_name')->select(), 'text')/*请修改table_name为关联表名*/";
+                        $line .= "->options([/*选项*/]);";
                     }
                 }
 
@@ -606,13 +603,15 @@ class CreatorLogic
      * @param string $modelNamespace
      * @param string $table
      * @param array $data
+     * @param array $relations
+     * @param string $prefix
      * @return array
      */
-    public function getModelLines($modelNamespace, $table, $data)
+    public function getModelLines($modelNamespace, $table, $data, $relations, $prefix)
     {
         $modelName = Str::studly($table);
 
-        $tableTitle = $data['controller_title'];
+        $modelTitle = $data['model_title'];
 
         $lines = [];
         $lines[] = "<?php";
@@ -629,7 +628,7 @@ class CreatorLogic
 
         $lines[] = '/**';
         $lines[] = ' * @time tpextmanager 生成于' . date('Y-m-d H:i:s');
-        $lines[] = ' * @title ' . $tableTitle;
+        $lines[] = ' * @title ' . $modelTitle;
         $lines[] = ' */';
 
         $lines[] = 'class ' . $modelName . ' extends Model';
@@ -638,12 +637,144 @@ class CreatorLogic
         if ($data['solft_delete'] == 1) {
             $lines[] = "use SoftDelete;";
         }
-        $lines[] = "    protected \$name = '{$table}'";
+        $lines[] = "    protected \$name = '{$table}';";
         $lines[] = '';
         $lines[] = '    protected $autoWriteTimestamp = \'datetime\';';
-        $lines[] = '';
+
+        $dbLogic  = new DbLogic;
+
+        if (!empty($data['TABLE_FIELDS'])) {
+            foreach ($data['TABLE_FIELDS'] as $field) {
+
+                if ($field['DISPLAYER_TYPE'] == 'belongsTo') {
+                    if (empty($field['FIELD_RELATION'])) {
+                        continue;
+                    }
+
+                    $relationName = explode('.', $field['FIELD_RELATION'])[0];
+
+                    $find = false;
+                    foreach ($relations as $rl) {
+
+                        if ($rl['local_table_name'] == $prefix . $table && $rl['foreign_key'] == $field['COLUMN_NAME']) {
+                            $find = true;
+                            break;
+                        }
+                    }
+
+                    if (!$find) { //未找到设置的关联
+
+                        $foreignTableName = $prefix . preg_replace('/_id$/', '', $field['COLUMN_NAME']); //关联表名
+                        if ($dbLogic->getTableInfo($foreignTableName, 'TABLE_NAME')) { //表是否存在
+
+                            $foreignModelname = Str::studly(preg_replace('/_id$/', '', $field['COLUMN_NAME']));
+
+                            $lines[] = '';
+                            $lines[] = "    public function {$relationName}()";
+                            $lines[] = '    {';
+                            $lines[] = "        return \$this->belongsTo({$foreignModelname}::class, '{$field['COLUMN_NAME']}');";
+                            $lines[] = '    }';
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($relations as &$rl) {
+            $foreignModelname = Str::studly(preg_replace('/^' . $prefix . '(.+)$/', '$1', $rl['foreign_table_name']));
+
+            $lines[] = '';
+            $lines[] = "    public function {$rl['relation_name']}()";
+            $lines[] = '    {';
+            if ($rl['relation_type'] == 'belongs_to') {
+                $lines[] = "        return \$this->belongsTo({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
+            } else { //has_one
+                $lines[] = "        return \$this->hasOne({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
+            }
+            $lines[] = '    }';
+        }
         $lines[] = '}';
         $lines[] = '';
+
+        return $lines;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $modelFileName
+     * @param array $relations
+     * @param string $prefix
+     * @return array
+     */
+    public function getModelRelationLines($modelFileName, $relations, $prefix)
+    {
+        $lines = [];
+
+        $fileHandle = fopen($modelFileName, "r");
+
+        $find = 0;
+
+        while (!feof($fileHandle)) {
+            $line = fgets($fileHandle);
+
+            foreach ($relations as &$rl) {
+                if (strpos($line, $rl['relation_name']) !== false) {
+                    $rl['find'] = 1;
+                    $find += 1;
+                    break;
+                }
+            }
+
+            $lines[] = $line;
+        }
+
+        fclose($fileHandle);
+
+        if (count($relations) > $find) //关联不完整
+        {
+            $count = count($lines);
+
+            for ($i = $count - 1; $i >= 0; $i -= 1) {
+                $line = $lines[$i];
+                unset($lines[$i]);
+
+                if (strpos($line, '}') !== false) { //最后一个}符号，class结束符
+                    break;
+                }
+            }
+
+            $newLine = implode('', $lines);
+
+            $lines = [$newLine];
+
+            $r = 0;
+            foreach ($relations as &$rl) {
+                if (!isset($rl['find'])) {
+                    $r += 1;
+                    $foreignModelname = Str::studly(preg_replace('/^' . $prefix . '(.+)$/', '$1', $rl['foreign_table_name']));
+
+                    if ($r > 1) {
+                        $lines[] = '';
+                    }
+
+                    $lines[] = "    public function {$rl['relation_name']}()";
+                    $lines[] = '    {';
+                    if ($rl['relation_type'] == 'belongs_to') {
+                        $lines[] = "        return \$this->belongsTo({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
+                    } else { //has_one
+                        $lines[] = "        return \$this->hasOne({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
+                    }
+                    $lines[] = '    }';
+                }
+            }
+            $lines[] = '}'; //class结束符
+        } else {
+            $newLine = implode('', $lines);
+
+            $lines = [$newLine];
+            //关联完整，原样返回
+        }
 
         return $lines;
     }
@@ -676,18 +807,25 @@ class CreatorLogic
 
                     if ($field['COLUMN_NAME'] == $formField['COLUMN_NAME']) {
                         $field['COLUMN_COMMENT'] = $formField['COLUMN_COMMENT'];
+                        break;
                     }
                 }
 
-                if (preg_match('/^(.+?)id$/', $field['COLUMN_COMMENT'], $mch)) {
+                if ($field['COLUMN_NAME'] == 'id' && $field['COLUMN_COMMENT'] == '主键') {
+                    $field['COLUMN_COMMENT'] = '编号';
+                } else if (preg_match('/^(.+?)id$/', $field['COLUMN_COMMENT'], $mch)) {
                     $field['COLUMN_COMMENT'] = $mch[1];
                 }
 
                 $lines[] = "    '{$field['COLUMN_NAME']}'  => '{$field['COLUMN_COMMENT']}',";
 
                 if (preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
-                    $lines[] = "    '{$field['COLUMN_NAME']}_start'  => '{$field['COLUMN_COMMENT']}起',";
-                    $lines[] = "    '{$field['COLUMN_NAME']}_end'  => '{$field['COLUMN_COMMENT']}止',";
+                    if (!isset($fields[$field['COLUMN_NAME'] . '_start'])) {
+                        $lines[] = "    '{$field['COLUMN_NAME']}_start'  => '{$field['COLUMN_COMMENT']}起',";
+                    }
+                    if (!isset($fields[$field['COLUMN_NAME'] . '_end'])) {
+                        $lines[] = "    '{$field['COLUMN_NAME']}_end'  => '{$field['COLUMN_COMMENT']}止',";
+                    }
                 }
             }
         }

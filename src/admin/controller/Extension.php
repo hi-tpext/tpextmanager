@@ -785,7 +785,7 @@ class Extension extends Controller
             $form->fill($data);
             $form->ajax(false);
 
-            $form->btnSubmit('更&nbsp;&nbsp;新', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success btn-loading');
+            $form->btnSubmit('更&nbsp;&nbsp;新', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
 
             return $builder->render();
@@ -889,7 +889,7 @@ class Extension extends Controller
             $form->fill($data);
             $form->ajax(false);
 
-            $form->btnSubmit('下&nbsp;&nbsp;载', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success btn-loading');
+            $form->btnSubmit('下&nbsp;&nbsp;载', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
 
             return $builder->render();
@@ -1007,13 +1007,13 @@ class Extension extends Controller
         $form->ajax(false);
 
         if ($type == 1) {
-            $form->btnSubmit('安&nbsp;&nbsp;装', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success btn-loading');
+            $form->btnSubmit('安&nbsp;&nbsp;装', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-success');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
         } else if ($type == 2) {
-            $form->btnSubmit('卸&nbsp;&nbsp;载', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-danger btn-loading');
+            $form->btnSubmit('卸&nbsp;&nbsp;载', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-danger');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
         } else if ($type == 3) {
-            $form->btnSubmit('升&nbsp;&nbsp;级', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-warning btn-loading');
+            $form->btnSubmit('升&nbsp;&nbsp;级', '6 col-lg-6 col-sm-6 col-xs-6', 'btn-warning');
             $form->btnLayerClose('返&nbsp;&nbsp;回', '6 col-lg-6 col-sm-6 col-xs-6');
         }
     }

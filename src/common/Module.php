@@ -6,7 +6,7 @@ use tpext\common\Module as baseModule;
 
 class Module extends baseModule
 {
-    protected $version = '1.0.1';
+    protected $version = '1.0.2';
 
     protected $name = 'tpext.manager';
 
@@ -18,5 +18,10 @@ class Module extends baseModule
 
     protected $modules = [
         'admin' => ['config', 'extension', 'dbtable', 'creator'],
+    ];
+
+    protected $versions = [
+        '1.0.1' => '',
+        '1.0.2' => '1.0.2.sql',
     ];
 }
