@@ -488,7 +488,7 @@ class CreatorLogic
                     if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+), (\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(db('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
-                    $line .= "->options([/*选项*/]);";
+                        $line .= "->options([/*选项*/]);";
                     }
                 }
 
@@ -696,7 +696,7 @@ class CreatorLogic
             $line = fgets($fileHandle);
 
             foreach ($relations as &$rl) {
-                if (strpos($line, $rl['relation_name']) !== false) {
+                if (preg_match('/public\s+function\s+' . $rl['relation_name'] . '\s*\(\)/i', $line)) {
                     $rl['find'] = 1;
                     $find += 1;
                     break;
