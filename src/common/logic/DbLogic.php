@@ -64,6 +64,9 @@ class DbLogic
      */
     public function getTables($columns = '*', $where = '', $sortOrder = 'TABLE_NAME ASC')
     {
+        if ($where && !preg_match('/\s*and/i', $where)) {
+            $where = 'AND ' . $where;
+        }
         $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
         return $tables;
@@ -78,6 +81,9 @@ class DbLogic
      */
     public function getDeletedTables($where = '', $sortOrder = 'TABLE_NAME ASC')
     {
+        if ($where && !preg_match('/\s*and/i', $where)) {
+            $where = 'AND ' . $where;
+        }
         $tables = Db::query("select TABLE_NAME,TABLE_COMMENT from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
         return $tables;
@@ -108,6 +114,9 @@ class DbLogic
      */
     public function getFields($tableName, $columns = '*', $where = '', $sortOrder = 'ORDINAL_POSITION ASC')
     {
+        if ($where && !preg_match('/\s*and/i', $where)) {
+            $where = 'AND ' . $where;
+        }
         $fields = Db::query("select {$columns} from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
         return $fields;
@@ -138,6 +147,9 @@ class DbLogic
      */
     public function getDeletedFields($tableName, $where = '', $sortOrder = 'ORDINAL_POSITION ASC')
     {
+        if ($where && !preg_match('/\s*and/i', $where)) {
+            $where = 'AND ' . $where;
+        }
         $fields = Db::query("select COLUMN_NAME,COLUMN_COMMENT from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME` LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
         return $fields;

@@ -3,13 +3,16 @@
 namespace tpext\manager\admin\controller;
 
 use think\Controller;
-use think\Db;
 use think\Loader;
+use tpext\manager\common\Module;
 use tpext\builder\common\Wrapper;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
 use tpext\manager\common\logic\CreatorLogic;
 use tpext\manager\common\logic\DbLogic;
+use tpext\manager\common\model\TableRelation;
+use think\facade\Validate;
+
 
 /**
  * Undocumented class
@@ -36,23 +39,27 @@ class Creator extends Controller
 
     protected $prefix;
 
+    /**
+     * Undocumented variable
+     *
+     * @var TableRelation
+     */
+    protected $relationModel;
+
     protected function initialize()
     {
         $this->pageTitle = '构建器';
-
         $this->database = config('database.database');
-
         $this->pk = 'TABLE_NAME';
 
         $this->creatorLogic = new CreatorLogic;
-
         $this->dbLogic = new DbLogic;
 
         $this->prefix = config('database.prefix');
-
         $this->sortOrder = 'TABLE_NAME ASC';
-
         $this->pagesize = 9999; //不产生分页
+
+        $this->relationModel = new TableRelation;
     }
 
     protected function filterWhere()
@@ -101,21 +108,21 @@ class Creator extends Controller
 
     public function edit($id)
     {
-        if (request()->isPost()) {
-            return $this->save($id);
+        if (request()->isGet()) {
+            $builder = $this->builder($this->pageTitle, $this->editText);
+            $data = $this->dbLogic->getTableInfo($id);
+            if (!$data) {
+                return $builder->layer()->close(0, '数据不存在');
+            }
+            $form = $builder->form();
+            $this->form = $form;
+            $this->buildForm(true, $data);
+            $form->fill($data);
+
+            return $builder->render();
         }
 
-        $builder = $this->builder($this->pageTitle, $this->editText);
-        $data = $this->dbLogic->getTableInfo($id);
-        if (!$data) {
-            return $builder->layer()->close(0, '数据不存在');
-        }
-        $form = $builder->form();
-        $this->form = $form;
-        $this->buildForm(true, $data);
-        $form->fill($data);
-
-        return $builder->render();
+        return $this->save($id);
     }
 
     /**
@@ -132,9 +139,10 @@ class Creator extends Controller
         $fields = $this->dbLogic->getFields($data['TABLE_NAME'], 'COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,COLUMN_COMMENT,IS_NULLABLE,NUMERIC_SCALE,NUMERIC_PRECISION,CHARACTER_MAXIMUM_LENGTH,DATA_TYPE');
         $form->hidden('TABLE_NAME');
         $form->hidden('solft_delete')->value($this->dbLogic->getFieldInfo($data['TABLE_NAME'], 'delete_time') ? 1 : 0);
-        $form->radio('model_namespace', 'model命名空间')->options(['common' => 'app\common\model', 'admin' => 'app\admin\model'])->default('common');
+        $form->raw('model_namespace', 'model命名空间')->value('<b>app\\' . Module::getInstance()->config('model_namespace') . '\\model\\</b>可在扩展配置中修改');
         $form->text('controller', 'Controller名称')->default(ucfirst(strtolower(Loader::parseName($table, 1))))->help('支持二级目录，如：shop/order');
         $form->text('controller_title', '控制器注释')->default($data['TABLE_COMMENT'])->required();
+        $form->hidden('model_title')->default($data['TABLE_COMMENT']);
 
         $form->switchBtn('table_build', '表格生成')->default(1);
         $form->checkbox('table_toolbars', '表格工具')->options(['add' => '添加', 'delete' => '批量删除', 'export' => '导出', 'enable' => '批量禁用/启用', 'import' => '导入'])
@@ -152,6 +160,12 @@ class Creator extends Controller
 
             $field['FIELD_RELATION'] = '';
 
+            $relation = $this->relationModel->where(['local_table_name' => $data['TABLE_NAME'], 'foreign_key' => $field['COLUMN_NAME']])->find();
+
+            if ($relation) {
+                $field['FIELD_RELATION'] = $relation['relation_name'] . '.name';
+            }
+
             if (
                 $this->dbLogic->isInteger($field['DATA_TYPE'])
                 || $this->dbLogic->isDecimal($field['DATA_TYPE'])
@@ -161,12 +175,14 @@ class Creator extends Controller
                 $field['ATTR'][] = 'sortable';
             }
 
-            if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
+            if ($field['FIELD_RELATION']) {
+                $field['DISPLAYER_TYPE'] = 'belongsTo';
+            } else if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'belongsTo';
                 $field['FIELD_RELATION'] = 'parent.name';
             } else if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'belongsTo';
-                $field['FIELD_RELATION'] = strtolower($mch[1]) . '.name';
+                $field['FIELD_RELATION'] = Loader::parseName($mch[1], 1, false) . '.name';
             } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'matches';
                 $field['FIELD_RELATION'] = strtolower($mch[1]) . '[text, id]';
@@ -207,7 +223,15 @@ class Creator extends Controller
             $field['FIELD_RELATION'] = '';
             $field['ATTR'] = [];
 
-            if ($field['COLUMN_NAME'] == 'id') {
+            $relation = $this->relationModel->where(['local_table_name' => $data['TABLE_NAME'], 'foreign_key' => $field['COLUMN_NAME']])->find();
+
+            if ($relation) {
+                $field['FIELD_RELATION'] = '/admin/' . strtolower(Loader::parseName($relation['relation_name'], 1)) . '/selectpage';
+            }
+
+            if ($field['FIELD_RELATION']) {
+                $field['DISPLAYER_TYPE'] = 'select';
+            } else if ($field['COLUMN_NAME'] == 'id') {
                 $field['DISPLAYER_TYPE'] = 'hidden';
             } else if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'select';
@@ -262,7 +286,7 @@ class Creator extends Controller
             ->with(
                 $form->text('COLUMN_NAME', '字段名')->readonly(),
                 $form->text('COLUMN_TYPE', '字段类型')->readonly()->getWrapper()->addStyle('width:140px;'),
-                $form->text('COLUMN_COMMENT', '字段注释')->required(),
+                $form->text('COLUMN_COMMENT', '字段注释')->readonly(),
                 $form->select('DISPLAYER_TYPE', '生成类型')->texts(array_keys(Wrapper::getDisplayersMap()))
                     ->beforOptions(['_' => '无', 'belongsTo' => 'belongsTo'])->required(),
                 $form->checkbox('ATTR', '属性')->options(['required' => '必填']),
@@ -288,20 +312,20 @@ class Creator extends Controller
         $tableActions = $data['table_actions'] ?? [];
 
         if ($data['form_build'] == 0 && (in_array('add', $tableToolbars) || in_array('edit', $tableActions) || in_array('view', $tableActions))) {
-            $this->error('有添加/删除/查看时必须生成表格');
+            $this->error('有添加/删除/查看时必须生成表单[form]');
         }
 
-        $this->creatorLogic->make($data);
+        $this->creatorLogic->make($data, $this->prefix, Module::getInstance()->config('model_namespace'));
 
         $dir = '';
         $controllerName = '';
 
         if (preg_match('/^\w+$/', $data['controller'])) {
-            $dir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', '']);
+            $dir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', '']);
 
             $controllerName = ucfirst(strtolower(Loader::parseName($data['controller'], 1)));
         } else if (preg_match('/^(\w+)[\/](\w+)$/', $data['controller'], $mch)) {
-            $dir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', strtolower($mch[1]), '']);
+            $dir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', strtolower($mch[1]), '']);
 
             $controllerName = ucfirst(strtolower(Loader::parseName($mch[2], 1)));
         } else {
@@ -316,12 +340,16 @@ class Creator extends Controller
 
         $modelNamespace = '';
         $mdir = '';
-        if ($data['model_namespace'] == 'common') {
+        if (Module::getInstance()->config('model_namespace') == 'common') {
             $modelNamespace = 'app\\common\\model';
-            $mdir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
+            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
         } else {
             $modelNamespace = 'app\\admin\\model';
-            $mdir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
+            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
+        }
+
+        if (!is_dir($mdir)) {
+            mkdir($mdir, 0755, true);
         }
 
         $table = preg_replace('/^' . $this->prefix . '(.+)$/', '$1', $data['TABLE_NAME']);
@@ -330,15 +358,32 @@ class Creator extends Controller
 
         $modelFileName = $mdir . $modelName . '.php';
 
-        $this->creatorLogic->saveFile($mdir, $modelFileName, implode(PHP_EOL, $this->creatorLogic->getModelLines($modelNamespace, $table, $data)));
+        $relations = $this->relationModel->where('local_table_name', $data['TABLE_NAME'])->select();
+
+        $res = 0;
+        if (!is_file($modelFileName)) {
+            $res = file_put_contents($modelFileName, implode(PHP_EOL, $this->creatorLogic->getModelLines($modelNamespace, $table, $data, $relations, $this->prefix)));
+        } else {
+            $res = file_put_contents($modelFileName, implode(PHP_EOL, $this->creatorLogic->getModelRelationLines($modelFileName, $relations, $this->prefix)));
+        }
 
         $fields = $this->dbLogic->getFields($data['TABLE_NAME'], 'COLUMN_NAME,COLUMN_COMMENT');
 
-        $ldir = env('root_path') . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', config('default_lang'), '']);
+        $ldir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', config('default_lang'), '']);
 
-        $this->creatorLogic->saveFile($ldir, $ldir . strtolower($modelName) . '.php', implode(PHP_EOL, $this->creatorLogic->getLangLines($data, $fields)));
+        if (!is_dir($ldir)) {
+            mkdir($ldir, 0755, true);
+        }
 
-        return $this->builder()->layer()->closeRefresh(1, '生成成功，文件保存在：' . $fileName);
+        if (!is_file($ldir . strtolower($modelName) . '.php')) {
+            file_put_contents($ldir . strtolower($modelName) . '.php', implode(PHP_EOL, $this->creatorLogic->getLangLines($data, $fields)));
+        }
+
+        if ($res) {
+            return $this->builder()->layer()->closeRefresh(1, '生成控制器成功，文件保存在：' . $fileName);
+        } else {
+            return $this->builder()->layer()->closeRefresh(1, '生成控制器成功，文件保存在：' . $fileName . '，model文件生成失败');
+        }
     }
 
     /**
@@ -355,14 +400,392 @@ class Creator extends Controller
         $table->raw('TABLE_ROWS', '记录条数');
         $table->show('AUTO_INCREMENT', '自增id');
         $table->show('CREATE_TIME', '创建时间');
+        $table->raw('TABLE_RELATIONS', '表关联');
 
         $table->getToolbar()
             ->btnRefresh()
             ->btnToggleSearch();
 
         $table->getActionbar()
-            ->btnEdit();
+            ->btnEdit('', '生成', 'btn-success', 'mdi-code-braces', 'title="代码生成" data-layer-size="1200px,98%"')
+            ->btnLink('relations', url('relations', ['id' => '__data.pk__']), '关联', 'btn-info', 'mdi-link-variant', 'title="设置表关联" data-layer-size="1200px,98%"')
+            ->btnLink('lang', url('lang', ['id' => '__data.pk__']), '翻译', 'btn-danger', 'mdi-translate', 'title="生成翻译文件"');
 
         $table->useCheckbox(false);
+
+        foreach ($data as &$d) {
+            $relations = $this->relationModel->where('local_table_name', $d['TABLE_NAME'])->column('relation_name');
+            $names = [];
+            foreach ($relations as $rl) {
+                $names[] = '<label class="label label-dark">' . $rl . '</label>';
+            }
+
+            $d['TABLE_RELATIONS'] = count($names) ? implode('、', $names) : '<label class="label label-default">暂无表关联<label/>';
+        }
+    }
+
+    /**
+     * Undocumented function
+     * @title 表关联管理
+     * @return mixed
+     */
+    public function relations($id)
+    {
+        $builder = $this->builder($this->pageTitle, '表关联');
+
+        $tableInfo = $this->dbLogic->getTableInfo($id);
+
+        if (!$tableInfo) {
+            return $builder->layer()->close(0, '数据不存在');
+        }
+
+        $modelNamespace = '';
+        $mdir = '';
+        if (Module::getInstance()->config('model_namespace') == 'common') {
+            $modelNamespace = 'app\\common\\model';
+            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
+        } else {
+            $modelNamespace = 'app\\admin\\model';
+            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
+        }
+
+        if (!is_dir($mdir)) {
+            mkdir($mdir, 0755, true);
+        }
+
+        $table = preg_replace('/^' . $this->prefix . '(.+)$/', '$1', $id);
+
+        $modelName = Loader::parseName($table, 1);
+
+        $modelFileName = $mdir . $modelName . '.php';
+
+        if (request()->isGet()) {
+
+            $tables = $this->dbLogic->getTables('TABLE_NAME');
+
+            $relations = $this->relationModel->where('local_table_name', $id)->select();
+
+            foreach ($relations as $key => &$pdata) {
+                if ($pdata['relation_type'] == 'belongs_to') {
+                    $pdata['field_name'] =  $pdata['foreign_key'];
+                    $pdata['relation_key'] = $pdata['local_key'];
+                } else {
+                    $pdata['relation_key'] = $pdata['foreign_key'];
+                    $pdata['field_name'] = $pdata['local_key'];
+                }
+            }
+
+            $fields = $this->dbLogic->getFields($id, 'COLUMN_NAME');
+
+            $form = $builder->form();
+
+            $form->tab('关联设置');
+
+            $form->show('TABLE_NAME', '表名称')->value($id);
+            $form->raw('model_namespace', 'model命名空间')->value('<b>app\\' . Module::getInstance()->config('model_namespace') . '\\model\\</b>可在扩展配置中修改');
+            if (is_file($modelFileName)) {
+                $form->raw('tips', '提示')->value('已存在模型文件，将覆被盖：<b>' . str_replace(app()->getRootPath(), '', $modelFileName) . '</b>');
+            }
+            $form->text('model_title', 'model注释')->default($tableInfo['TABLE_COMMENT'])->required();
+            $form->hidden('solft_delete')->value($this->dbLogic->getFieldInfo($tableInfo['TABLE_NAME'], 'delete_time') ? 1 : 0);
+
+            $form->items('relations', '关联')->dataWithId($relations)->size(12, 12)->with(
+                $form->select('field_name', '字段')->required()->optionsData($fields, 'COLUMN_NAME', 'COLUMN_NAME'),
+                $form->select('relation_type', '关联类型')->required()->options(['belongs_to' => 'belongsTo', 'has_one' => 'hasOne'])->default('belongs_to'),
+                $form->select('foreign_table_name', '关联表')->required()->optionsData($tables, 'TABLE_NAME', 'TABLE_NAME')->withNext(
+                    $form->select('relation_key', '关联字段')->required()->dataUrl(url('slecltfields'), 'COLUMN_NAME', 'COLUMN_NAME')
+                ),
+                $form->text('relation_name', '关联名称')
+            );
+
+
+            $form->tab('示列&说明');
+            $form->raw('tips', '')->size(12, 12)->showLabel(false)->value('实列：<pre>' .
+                '
+//产品基本信息表
+class ShopGoods extends Model
+{
+    protected $name = \'shop_goods\';
+
+    public function category()    //category:关联名称，若不填写，则根据关联表名转驼峰得到：shopCategory.
+    {
+        //     category_id  : 字段         [shop_goods]表中的[category_id]字段
+        //              id  : 关联字段      [shop_category]表中的[id]字段
+        //       belongsTo  : 关联类型
+        //    shop_category : 关联表        [ShopCategory]模式对应的表名[shop_category]
+        return \$this->belongsTo(ShopCategory::class, \'category_id\', \'id\');
+    }
+
+    public function extendInfo()   // extendInfo:关联名称，若不填写，则根据关联表明转驼峰得到：shopGoodsExtend.
+    {
+        //              id   : 字段        [shop_goods]表中的[id]字段
+        //        goods_id   : 关联字段    [shop_goods_extend]表中的[goods_id]字段
+        //          hasOne   : 关联类型
+        // shop_goods_extend : 关联表      [ShopGoodsExtend]模式对应的表名[shop_goods_extend]
+        return \$this->hasOne(ShopGoodsExtend::class, \'extend_id\', \'id\');
+    }
+
+    // $data = ShopGoods::where(\'id\', 1)->find();
+    // 对于驼峰命名的关联如[shopCategory]，获取时有3种方式：
+    // 1.不变化       => $data[\'shopCategory\']；
+    // 2.全部小写     => $data[\'shopcategory\']；（php特性：函数名、方法名不区分大小写）
+    // 3.驼峰转下划线  => $data[\'shop_category\']；
+    //使用
+    //$table->show(\'shopCategory.name\', \'分类\');
+    //$form->show(\'shop_category.name\', \'分类\');
+}
+
+//产品分类表
+class ShopCategory extends Model
+{
+    protected $name = \'shop_category\';
+}
+
+//产品扩展信息表
+class ShopGoodsExtend extends Model
+{
+    protected $name = \'shop_goods_extend\';
+}
+
+'
+                . '</pre>')
+                ->help('设置是单向的，在`shop_goods`表中设置的关联，将在[ShopGoods]模型中添加[category]、[extendInfo]两个关联，但不会在[ShopCategory]、[ShopGoodsExtend]模型中生成相对于[ShopGoods]的关联');
+
+            return $builder->render();
+        }
+
+        $relations = input('post.relations/a', []);
+
+        if (count($relations)) {
+            $errors = [];
+            $changes = 0;
+
+            foreach ($relations as $key => &$pdata) {
+                $pdata['local_table_name'] = $id;
+                $dataModel = new TableRelation;
+
+                $result = Validate::check($pdata, [
+                    'field_name|字段' => 'require',
+                    'relation_type|关联类型' => 'require',
+                    'foreign_table_name|关联表' => 'require',
+                    'relation_key|关联字段' => 'require',
+                    'relation_name|关联字段' => 'regex:[a-z0-9A-Z_]{0,}',
+                ]);
+
+                if (true !== $result) {
+                    $errors[] = '字段[' . $pdata['field_name'] . ']' . $result;
+                    continue;
+                }
+
+                if ($pdata['local_table_name'] == $pdata['foreign_table_name'] && $pdata['field_name'] == $pdata['relation_key']) {
+                    $errors[] = '字段[' . $pdata['field_name'] . ']' . '关联错误';
+                    continue;
+                }
+
+                $is_del = isset($pdata['__del__']) && $pdata['__del__'] == 1;
+                $is_add = strpos($key, '__new__') !== false;
+
+                if ($pdata['relation_type'] == 'belongs_to') {
+                    $pdata['foreign_key'] = $pdata['field_name'];
+                    $pdata['local_key'] = $pdata['relation_key'];
+                } else {
+                    $pdata['foreign_key'] = $pdata['relation_key'];
+                    $pdata['local_key'] = $pdata['field_name'];
+                }
+
+                if (empty($pdata['relation_name'])) {
+                    $pdata['relation_name'] = Loader::parseName(preg_replace('/^' . $this->prefix . '/', '', $pdata['foreign_table_name']), 1, false);
+                }
+
+                if ($is_add) {
+                    $res = $dataModel->isUpdate(false)->save($pdata);
+                    if ($res) {
+                        $changes += 1;
+                    } else {
+                        $errors[] = '字段[' . $pdata['field_name'] . ']保存出错';
+                    }
+                } else {
+                    if ($is_del) {
+                        $res = $dataModel::destroy($key);
+                        if ($res) {
+                            $changes += 1;
+                        }
+                    } else {
+                        $res = $dataModel->isUpdate(true, ['id' => $key])->save($pdata);
+                        if ($res) {
+                            $changes += 1;
+                        } else {
+                            $errors[] = '字段[' . $pdata['field_name'] . ']保存出错';
+                        }
+                    }
+                }
+            }
+
+            if ($changes) {
+                if (!empty($errors)) {
+                    $this->error('保存关联信息失败-' . implode('<br>', $errors));
+                }
+            } else {
+                $this->error('保存关联信息失败-' . implode('<br>', $errors));
+            }
+        }
+
+        $relations = $this->relationModel->where('local_table_name', $id)->select();
+
+        $data = request()->post();
+
+        $res = 0;
+        if (!is_file($modelFileName)) {
+            $res = file_put_contents($modelFileName, implode(PHP_EOL, $this->creatorLogic->getModelLines($modelNamespace, $table, $data, $relations, $this->prefix)));
+        } else {
+            if (count($relations)) {
+                $res = file_put_contents($modelFileName, implode(PHP_EOL, $this->creatorLogic->getModelRelationLines($modelFileName, $relations, $this->prefix)));
+            } else {
+                $res = 1;
+            }
+        }
+
+        if ($res) {
+            return $builder->layer()->closeRefresh(1, '保存成功-' . $modelFileName);
+        } else {
+            $this->error('保存Model文件失败-' . $modelFileName);
+        }
+    }
+
+    /**
+     * Undocumented function
+     * @title 下拉选择字段
+     * @return void
+     */
+    public function slecltfields()
+    {
+        $table = input('prev_val');
+        $selected = input('selected');
+        $q = input('q');
+
+        if ($selected) {
+            return json(
+                [
+                    'data' => [['COLUMN_NAME' => $selected]],
+                ]
+            );
+        }
+        $where = '';
+
+        if ($q) {
+            $where = "COLUMN_NAME LIKE '%{$q}%'";
+        }
+
+        $fields = $this->dbLogic->getFields($table, 'COLUMN_NAME', $where);
+
+        return json(
+            [
+                'data' => $fields,
+                'has_more' => false
+            ]
+        );
+    }
+
+    /**
+     * Undocumented function
+     * @title 翻译生成
+     * @return mixed
+     */
+    public function lang($id)
+    {
+        $builder = $this->builder($this->pageTitle, '翻译生成');
+        $fields = $this->dbLogic->getFields($id, 'COLUMN_NAME,COLUMN_TYPE,COLUMN_COMMENT');
+
+        $tableInfo = $this->dbLogic->getTableInfo($id);
+
+        $table = preg_replace('/^' . $this->prefix . '(.+)$/', '$1', $id);
+
+        $modelName = Loader::parseName($table, 1);
+
+        $ldir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', config('default_lang'), '']);
+
+        if (!is_dir($ldir)) {
+            mkdir($ldir, 0755, true);
+        }
+
+        $filePath = $ldir . strtolower($modelName) . '.php';
+
+        if (!$tableInfo) {
+            return $builder->layer()->close(0, '数据不存在');
+        }
+
+        if (request()->isGet()) {
+
+            $form = $builder->form();
+
+            $form->show('TABLE_NAME', '表名称')->value($id);
+            $form->hidden('controller_title')->value($tableInfo['TABLE_COMMENT'])->required();
+
+            if (is_file($filePath)) { //翻译文件存在，读取
+                $langData = include $filePath;
+                foreach ($langData as $key => $val) {
+                    $find = false;
+                    foreach ($fields as &$field) {
+                        if ($field['COLUMN_NAME'] == $key) {
+                            $field['COLUMN_COMMENT'] = $val;
+                            $find = true;
+                            $field['__can_delete__'] = 0;
+                            break;
+                        }
+                    }
+
+                    if (!$find) {
+                        $fields[] = [
+                            'COLUMN_NAME' => $key,
+                            'COLUMN_COMMENT' => $val,
+                            'COLUMN_TYPE' => '--',
+                            '__can_delete__' => 1
+                        ];
+                    }
+                }
+
+                $form->raw('tips', '提示')->value('已存在翻译文件，将覆被盖：<b>' . str_replace(app()->getRootPath(), '', $filePath) . '</b>');
+            } else {
+                foreach ($fields as &$field) {
+                    $field['__can_delete__'] = 0;
+                }
+            }
+
+            $form->items('FORM_FIELDS', '翻译')->dataWithId($fields, 'COLUMN_NAME')->size(12, 12)
+                ->with(
+                    $form->text('COLUMN_NAME', '字段名')->rendering(function ($field) {
+                        if (!isset($field->data['__can_delete__']) || $field->data['__can_delete__'] == 0) {
+                            $field->readonly();
+                        }
+                    }),
+                    $form->show('COLUMN_TYPE', '字段类型')->default('--'),
+                    $form->text('COLUMN_COMMENT', '字段注释')->required()
+                )->templateFieldCall(function ($templateField) {
+                    if (stripos($templateField->getName(), 'COLUMN_NAME') !== false) {
+                        $templateField->readonly(false);
+                    }
+                })->help('可以添加或删除数据表中不存在字段的键值对');
+
+            return $builder->render();
+        }
+
+        $data = request()->post();
+
+        $newData = [];
+
+        foreach ($data['FORM_FIELDS'] as $field) {
+            if (!(isset($field['__del__']) && $field['__del__'] == 1)) {
+                $newData[$field['COLUMN_NAME']] = $field;
+            }
+        }
+        $data['FORM_FIELDS'] = [];
+
+        $res = file_put_contents($filePath, implode(PHP_EOL, $this->creatorLogic->getLangLines($data, $newData)));
+
+        if ($res) {
+            return $this->builder()->layer()->closeRefresh(1, '生成成功，翻译文件保存在：' . $filePath);
+        } else {
+            $this->error('翻译文件保存失败');
+        }
     }
 }
