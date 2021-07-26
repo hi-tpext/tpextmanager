@@ -719,7 +719,7 @@ class CreatorLogic
             $line = fgets($fileHandle);
 
             foreach ($relations as &$rl) {
-                if (strpos($line, $rl['relation_name']) !== false) {
+                if (preg_match('/public\s+function\s+' . $rl['relation_name'] . '\s*\(\)/i', $line)) {
                     $rl['find'] = 1;
                     $find += 1;
                     break;
