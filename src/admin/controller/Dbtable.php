@@ -647,9 +647,9 @@ class Dbtable extends Controller
             $table->useActionbar(false);
         }
 
-        $table->useCheckbox(false);
-
-        $table->useToolbar(false);
+        $table->getToolbar()
+            ->btnRefresh()
+            ->useExport(false);
 
         $table->sortable($fieldNames);
 
