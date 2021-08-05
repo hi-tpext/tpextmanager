@@ -759,6 +759,7 @@ class CreatorLogic
     /**
      * Undocumented function
      *
+     * @param array $data
      * @param array $fields
      * @return array
      */
@@ -779,6 +780,10 @@ class CreatorLogic
         if (!empty($fields)) {
 
             foreach ($fields as $field) {
+
+                if (empty($field['COLUMN_NAME'])) {
+                    continue;
+                }
 
                 foreach ($data['FORM_FIELDS'] as $formField) {
 

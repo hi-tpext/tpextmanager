@@ -757,14 +757,12 @@ class ShopGoodsExtend extends Model
                         if (!isset($field->data['__can_delete__']) || $field->data['__can_delete__'] == 0) {
                             $field->readonly();
                         }
-                    }),
+                    })->required(),
                     $form->show('COLUMN_TYPE', '字段类型')->default('--'),
                     $form->text('COLUMN_COMMENT', '字段注释')->required()
-                )->templateFieldCall(function ($templateField) {
-                    if (stripos($templateField->getName(), 'COLUMN_NAME') !== false) {
-                        $templateField->readonly(false);
-                    }
-                })->help('可以添加或删除数据表中不存在字段的键值对');
+                )->help('可以添加或删除数据表中不存在字段的键值对');
+
+            $this->builder()->addScript("$('#items-FORM_FIELDS-temple .row-COLUMN_NAME').removeAttr('readonly');");
 
             return $builder->render();
         }
