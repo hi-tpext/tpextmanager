@@ -234,7 +234,18 @@ class Dbtable extends Controller
             return $this->builder()->layer()->closeRefresh(1, '保存成功');
         }
 
-        $this->success('新建表成功', url('fieldlist', ['name' => $data['TABLE_NAME']]), ['script' => '<script>parent.$(".search-refresh").trigger("click");</script>'], 1);
+        $script = "<script>
+
+        parent.$('.search-refresh').trigger('click');
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.style(index, {
+            width: ($(parent.window).width() * 0.98) + 'px',
+            left : ($(parent.window).width() * 0.01) + 'px',
+        });
+
+        </script>";
+
+        $this->success('新建表成功', url('fieldlist', ['name' => $data['TABLE_NAME']]), ['script' => $script], 1);
     }
 
     /**
