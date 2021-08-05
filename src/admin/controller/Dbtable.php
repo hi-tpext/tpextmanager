@@ -142,6 +142,25 @@ class Dbtable extends Controller
 
         if ($isEdit) {
 
+            $form->raw('fields', '字段管理')->value('<a href="#" id="go-fields">前往&gt;&gt;</a>');
+
+            $url = url('fieldlist', ['name' => $data['TABLE_NAME']]);
+
+            $this->builder()->addScript("
+
+            $('#go-fields').click(function(){
+                var index = parent.layer.getFrameIndex(window.name);
+
+                parent.layer.style(index, {
+                    width: ($(parent.window).width() * 0.98) + 'px',
+                    left : ($(parent.window).width() * 0.01) + 'px',
+                });
+
+                location.href ='{$url}';
+            });
+
+            ");
+
             $data['DATA_SIZE'] = $this->dbLogic->getDataSize($data);
 
             $form->tab('基本信息');
@@ -252,6 +271,8 @@ class Dbtable extends Controller
         $table->getActionbar()
             ->btnEdit()
             ->btnLink('fields', url('fieldlist', ['name' => '__data.pk__']), '', 'btn-success', 'mdi-format-list-bulleted-type', 'title="字段管理" data-layer-size="98%,98%"')
+            ->btnLink('relations', url('/admin/creator/relations', ['id' => '__data.pk__']), '', 'btn-info', 'mdi-link-variant', 'title="设置表关联" data-layer-size="1200px,98%"')
+            ->btnLink('lang', url('/admin/creator/lang', ['id' => '__data.pk__']), '', 'btn-danger', 'mdi-translate', 'title="生成翻译文件"')
             ->btnDelete();
 
         $table->useCheckbox(false);
