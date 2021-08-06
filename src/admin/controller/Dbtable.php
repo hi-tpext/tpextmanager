@@ -234,8 +234,6 @@ class Dbtable extends Controller
             return $this->builder()->layer()->closeRefresh(1, '保存成功');
         }
 
-        $url = url('fieldlist', ['name' => $data['TABLE_NAME']]);
-
         $script = "<script>
 
         parent.$('.search-refresh').trigger('click');
@@ -245,11 +243,9 @@ class Dbtable extends Controller
             left : ($(parent.window).width() * 0.01) + 'px',
         });
 
-        location.href= '{$url}';
-
         </script>";
 
-        $this->success('新建表成功', '', ['script' => $script]);
+        $this->success('新建表成功', url('fieldlist', ['name' => $data['TABLE_NAME']]), ['script' => $script], 0.5);
     }
 
     /**
