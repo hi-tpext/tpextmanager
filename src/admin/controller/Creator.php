@@ -139,7 +139,6 @@ class Creator extends Controller
         $form = $this->form;
         $fields = $this->dbLogic->getFields($data['TABLE_NAME'], 'COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,COLUMN_COMMENT,IS_NULLABLE,NUMERIC_SCALE,NUMERIC_PRECISION,CHARACTER_MAXIMUM_LENGTH,DATA_TYPE');
         $form->hidden('TABLE_NAME');
-        $form->hidden('solft_delete')->value($this->dbLogic->getFieldInfo($data['TABLE_NAME'], 'delete_time') ? 1 : 0);
         $form->raw('model_namespace', 'model命名空间')->value('<b>app\\' . Module::getInstance()->config('model_namespace') . '\\model\\</b>可在扩展配置中修改');
         $form->text('controller', 'Controller名称')->default(ucfirst(strtolower(Str::studly($table))))->help('支持二级目录，如：shop/order');
         $form->text('controller_title', '控制器注释')->default($data['TABLE_COMMENT'])->required();
@@ -488,7 +487,6 @@ class Creator extends Controller
                 $form->raw('tips', '提示')->value('已存在模型文件，将覆被盖：<b>' . str_replace(app()->getRootPath(), '', $modelFileName) . '</b>');
             }
             $form->text('model_title', 'model注释')->default($tableInfo['TABLE_COMMENT'])->required();
-            $form->hidden('solft_delete')->value($this->dbLogic->getFieldInfo($tableInfo['TABLE_NAME'], 'delete_time') ? 1 : 0);
 
             $form->items('relations', '关联')->dataWithId($relations)->size(12, 12)->with(
                 $form->select('field_name', '字段')->required()->optionsData($fields, 'COLUMN_NAME', 'COLUMN_NAME'),

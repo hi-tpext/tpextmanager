@@ -190,6 +190,7 @@ class CreatorLogic
         $this->lines[] = "        \$this->pk = 'id';";
         $this->lines[] = "        \$this->pagesize = 14;";
         $this->lines[] = "        \$this->sortOrder = 'id desc';";
+        $this->lines[] = "        \$this->indexWith = []; //列表页关联";
 
         $tableToolbars = $data['table_toolbars'] ?? [];
         $tableActions = $data['table_actions'] ?? [];
@@ -271,7 +272,7 @@ class CreatorLogic
                     if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+),\s*(\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(\\think\\facade\\Db::name('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
-                        $line .= "->options([/*选项*/]);";
+                        $line .= "->options([/*选项*/])";
                     }
                 }
 
@@ -468,7 +469,7 @@ class CreatorLogic
     {
         $this->lines[] = '';
         $this->lines[] = '    /**';
-        $this->lines[] = '     * 构建搜索条件';
+        $this->lines[] = '     * 构建表单';
         $this->lines[] = '     * @param boolean $isEdit';
         $this->lines[] = '     * @param array $data';
         $this->lines[] = '     * @return mixed';
@@ -511,7 +512,7 @@ class CreatorLogic
                     if (!empty($field['FIELD_RELATION']) && preg_match('/^(\w+)\[(\w+),\s*(\w+)\]$/i', trim($field['FIELD_RELATION']), $mch)) {
                         $line .= "->optionsData(\\think\\facade\\Db::name('{$mch[1]}')->select(), '{$mch[2]}', '{$mch[3]}')";
                     } else {
-                        $line .= "->options([/*选项*/]);";
+                        $line .= "->options([/*选项*/])";
                     }
                 }
 
@@ -620,7 +621,14 @@ class CreatorLogic
         $lines[] = '';
         $lines[] = "use think\Model;";
 
-        if ($data['solft_delete'] == 1) {
+        $dbLogic  = new DbLogic;
+
+        $solft_delete = $dbLogic->getFieldInfo($prefix . $table, 'delete_time') ? 1 : 0;
+
+        $create_time = $dbLogic->getFieldInfo($prefix . $table, 'create_time') ? 1 : 0;
+        $update_time = $dbLogic->getFieldInfo($prefix . $table, 'update_time') ? 1 : 0;
+
+        if ($solft_delete == 1) {
             $lines[] = "use think\Model\concern\SoftDelete;";
         }
 
@@ -634,14 +642,25 @@ class CreatorLogic
         $lines[] = 'class ' . $modelName . ' extends Model';
         $lines[] = '{';
 
-        if ($data['solft_delete'] == 1) {
+
+
+        if ($solft_delete) {
             $lines[] = "use SoftDelete;";
         }
+
         $lines[] = "    protected \$name = '{$table}';";
         $lines[] = '';
         $lines[] = '    protected $autoWriteTimestamp = \'datetime\';';
 
-        $dbLogic  = new DbLogic;
+        if (!$create_time) {
+            $lines[] = '';
+            $lines[] = '    protected $createTime = false;';
+        }
+
+        if (!$update_time) {
+            $lines[] = '';
+            $lines[] = '    protected $updateTime = false;';
+        }
 
         if (!empty($data['TABLE_FIELDS'])) {
             foreach ($data['TABLE_FIELDS'] as $field) {
