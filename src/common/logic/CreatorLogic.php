@@ -234,6 +234,7 @@ class CreatorLogic
         $this->lines[] = '    /**';
         $this->lines[] = '     * 构建表格';
         $this->lines[] = '     * @param array $data';
+        $this->lines[] = '     * @param boolean $isExporting';
         $this->lines[] = '     * @return mixed';
         $this->lines[] = '     */';
         $this->lines[] = '    protected function buildTable(&$data = [], $isExporting = false)';
