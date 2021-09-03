@@ -265,7 +265,7 @@ class Extension extends Controller
         $step = input('step', '0');
         if ($step == 0) {
             try {
-                db('extension')->select();
+                Db::name('extension')->select();
             } catch (\Throwable $e) {
                 $msg = $e->getMessage();
                 LightyearRes::getInstance()->copyAssets();
