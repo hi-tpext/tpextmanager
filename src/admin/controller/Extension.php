@@ -265,19 +265,15 @@ class Extension extends Controller
         $step = input('step', '0');
         if ($step == 0) {
             try {
-                Db::query('select TABLE_NAME from information_schema.tables');
+                db('extension')->select();
             } catch (\Throwable $e) {
                 $msg = $e->getMessage();
-                if (preg_match('/SQLSTATE\[HY000\]/i', $msg)) {
-                    LightyearRes::getInstance()->copyAssets();
-                    builderRes::getInstance()->copyAssets();
+                LightyearRes::getInstance()->copyAssets();
+                builderRes::getInstance()->copyAssets();
 
-                    $next = url('/admin/extension/dbconfig');
+                $next = url('/admin/extension/dbconfig');
 
-                    return "<h4>提示</h4><p>数据库连接失败，请配置数据库。</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
-                } else {
-                    echo $msg;
-                }
+                return "<h4>提示</h4><p>{$msg}.数据库连接失败，请配置数据库。</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
             }
             session('dbconfig', null);
             Module::getInstance()->install();
