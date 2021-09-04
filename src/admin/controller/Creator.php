@@ -419,7 +419,7 @@ class Creator extends Controller
                 $names[] = '<label class="label label-dark">' . $rl . '</label>';
             }
 
-            $d['TABLE_RELATIONS'] = count($names) ? implode('、', $names) : '<label class="label label-default">暂无表关联<label/>';
+            $d['TABLE_RELATIONS'] = count($names) ? implode('、', $names) : '<label class="label label-default">暂无表关联</label>';
         }
     }
 
