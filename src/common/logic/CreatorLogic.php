@@ -343,7 +343,6 @@ class CreatorLogic
         $this->lines[] = '';
         $this->lines[] = '    /**';
         $this->lines[] = '     * 构建搜索条件';
-        $this->lines[] = '     * @param array $data';
         $this->lines[] = '     * @return mixed';
         $this->lines[] = '     */';
         $this->lines[] = '    protected function filterWhere()';
