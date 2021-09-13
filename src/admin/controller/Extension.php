@@ -84,7 +84,6 @@ class Extension extends Controller
                 'hostport|端口' => 'require|number',
                 'method|方式' => 'require',
                 'username|账户名' => 'require',
-                'password|密码' => 'require',
                 'database|数据库名' => 'require',
                 'charset|数据库编码' => 'require',
             ]);
@@ -196,7 +195,7 @@ class Extension extends Controller
                 ->when(1)->with(
                     $form->fields('root_user_pwd', ' ')->showLabel(false)->with(
                         $form->text('username', 'root账户', 6)->default('root')->help('超级账户名，root或其他有创建新用户和数据库高级权限的账户')->required(),
-                        $form->password('password', 'root密码', 6)->required()
+                        $form->password('password', 'root密码', 6)
                     ),
                     $form->fields('new_user_pwd', ' ')->showLabel(false)->with(
                         $form->text('new_username', '新账户名', 6)->help('由英文字母数、字或、下划线组成')->required(),
