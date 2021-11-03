@@ -2,6 +2,7 @@
 
 namespace tpext\manager\admin\controller;
 
+use think\app\command\Build;
 use think\Controller;
 use think\facade\Config;
 use think\facade\Db;
@@ -510,8 +511,9 @@ class Extension extends Controller
         }
 
         $table->getToolbar()
-            ->btnImport(url('import'), 'zip', ['400px', '250px'], 20, 'zip包上传')
+            ->btnLink(url('import'), 'zip包上传', 'btn-pink', 'mdi-cloud-upload', 'data-layer-szie="400px,250px" title="zip包上传扩展"')
             ->btnRefresh();
+
         $table->useCheckbox(false);
     }
 
@@ -899,11 +901,53 @@ class Extension extends Controller
      */
     public function import()
     {
-        $fileurl = input('get.fileurl');
+        $builder = Builder::getInstance();
+
+        $checkFile = app()->getRootPath() . 'extend' . DIRECTORY_SEPARATOR . 'validate.txt';
+
+        if (request()->isGet()) {
+            $form = $builder->form();
+            $form->file('fileurl', 'zip上传')->jsOptions(['ext' => ['zip']])->required()->help('上传zip文件');
+            $form->password('validate', '验证字符')->required()->help(!file_exists($checkFile) ? '请新建[extend/validate.txt]文件，里面填入任意字符串，然后再此输入。' : '输入[extend/validate.txt]文件中的字符串内容');
+
+            return $builder->render();
+        }
+
+        $fileurl = input('fileurl');
+        $validate = input('validate');
 
         $logic = new ExtensionLogic;
 
-        $builder = Builder::getInstance();
+        if (!file_exists($checkFile)) {
+            $this->error('[extend/validate.txt]文件不存在');
+        }
+
+        if (trim($validate) !== trim(file_get_contents($checkFile))) {
+
+            $try_validate = session('admin_try_extend_validate');
+            $errors = 0;
+
+            if (session('?admin_try_extend_validate_errors')) {
+                $errors = session('admin_try_extend_validate_errors') > 300 ? 300
+                    : session('admin_try_extend_validate_errors');
+            }
+
+            if ($try_validate) {
+
+                $time_gone = $_SERVER['REQUEST_TIME'] - $try_validate;
+
+                if ($time_gone < $errors) {
+                    $this->error('错误次数过多，请' . ($errors - $time_gone) . '秒后再试');
+                }
+            }
+
+            $errors +=1;
+            session('admin_try_extend_validate', $_SERVER['REQUEST_TIME']);
+            session('admin_try_extend_validate_errors', $errors);
+
+            sleep(2);
+            $this->error('文件验证失败：验证字符串不匹配');
+        }
 
         $installRes = $logic->installExtend('.' . $fileurl, 1);
 
@@ -911,8 +955,7 @@ class Extension extends Controller
 
             $errors = $logic->getErrors();
 
-            $builder->content()->display('<h5>解压安装包时出错：</h5>' . implode('<br>', $errors));
-            return $builder->render();
+            $this->error('解压安装包时出错：' . implode('<br>', $errors));
         }
 
         $logic->getExtendExtensions(true);
