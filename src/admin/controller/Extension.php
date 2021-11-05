@@ -893,6 +893,20 @@ class Extension extends Controller
         }
     }
 
+    private function randstr($randLength = 16)
+    {
+        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHJKLMNPQEST123456789';
+
+        $len = strlen($chars);
+        $randStr = '';
+
+        for ($i = 0; $i < $randLength; $i++) {
+            $randStr .= $chars[rand(0, $len - 1)];
+        }
+
+        return $randStr;
+    }
+
     /**
      * Undocumented function
      *
@@ -906,9 +920,14 @@ class Extension extends Controller
         $checkFile = app()->getRootPath() . 'extend' . DIRECTORY_SEPARATOR . 'validate.txt';
 
         if (request()->isGet()) {
+
+            if (!file_exists($checkFile)) {
+                file_put_contents($checkFile, $this->randstr());
+            }
+
             $form = $builder->form();
             $form->file('fileurl', 'zip上传')->jsOptions(['ext' => ['zip']])->required()->help('上传zip文件');
-            $form->password('validate', '验证字符')->required()->help(!file_exists($checkFile) ? '请新建[extend/validate.txt]文件，里面填入任意字符串，然后再此输入。' : '输入[extend/validate.txt]文件中的字符串内容');
+            $form->password('validate', '验证字符')->required()->help(!file_exists($checkFile) ? '请在网站目录新建[extend/validate.txt]文件，里面填入任意字符串，然后再此输入。' : '输入网站目录下[extend/validate.txt]文件中的字符串内容');
 
             return $builder->render();
         }
@@ -941,7 +960,7 @@ class Extension extends Controller
                 }
             }
 
-            $errors +=1;
+            $errors += 1;
             session('admin_try_extend_validate', $_SERVER['REQUEST_TIME']);
             session('admin_try_extend_validate_errors', $errors);
 
