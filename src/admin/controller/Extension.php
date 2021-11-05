@@ -515,6 +515,7 @@ class Extension extends Controller
             ->btnRefresh();
 
         $table->useCheckbox(false);
+        $table->useChooseColumns(false); //切换远程和本地表格列不同，会有问题，干脆禁用。
     }
 
     public function install($key = '')
