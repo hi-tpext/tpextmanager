@@ -741,11 +741,4 @@ class DbLogic
     {
         return round(($data['AVG_ROW_LENGTH'] * $data['TABLE_ROWS'] + $data['INDEX_LENGTH']) / 1024 / 1024, 2);
     }
-
-    public static function isInstalled()
-    {
-        if (empty(config('database.database'))) {
-            return false;
-        }
-    }
 }
