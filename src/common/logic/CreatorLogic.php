@@ -774,6 +774,9 @@ class CreatorLogic
                 $lines[] = "        if (is_null(\$value)) {";
                 $lines[] = "            return null;";
                 $lines[] = "        }";
+                $lines[] = "        if (empty(\$value)) {";
+                $lines[] = "            return 0;";
+                $lines[] = "        }";
                 $lines[] = '';
                 $lines[] = "        return is_numeric(\$value) ? \$value : strtotime(\$value);";
                 $lines[] = '    }';
