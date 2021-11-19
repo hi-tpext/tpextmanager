@@ -532,22 +532,32 @@ class DbLogic
         }
 
         if ($not_null) {
+
+            if (strtoupper($default) == 'NULL') {
+                $default = '';
+            }
+
             if ($isInteger || $isDecimal) {
                 if (!is_numeric($default)) {
                     $default = '0';
                 }
             } else if ($isDatetime) {
                 if (empty($default)) {
-                    $default = date('Y-m-d', 0);
+                    if ($type == 'timestamp') {
+                        $default = date('Y-m-d H:i:s', date('Z'));
+                    } else {
+                        $default = date('Y-m-d H:i:s', 0);
+                    }
                 }
-            }
-
-            if (strtoupper($default) == 'NULL') {
-                $default = '';
             }
         } else {
             if ($info['COLUMN_NAME'] == 'delete_time') {
                 $default = 'NULL';
+            } else if ($type == 'timestamp') {
+                $not_null = 'NOT NULL';
+                if (empty($default)) {
+                    $default = date('Y-m-d H:i:s', date('Z'));
+                }
             } else if ($isDatetime && empty($default)) {
                 $default = 'NULL';
             }

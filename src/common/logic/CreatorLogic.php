@@ -376,32 +376,57 @@ class CreatorLogic
 
         if (!empty($data['TABLE_FIELDS'])) {
 
+            $createAndUpdate = [];
+
             foreach ($data['TABLE_FIELDS'] as $field) {
 
                 if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
-                    if (preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
-                        $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}_start']) && \$searchData['{$field['COLUMN_NAME']}_start'] != '') {";
 
-                        $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '>=', \$searchData['{$field['COLUMN_NAME']}_start']];";
-                        $this->lines[] = '        }';
-
-                        $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}_end']) && \$searchData['{$field['COLUMN_NAME']}_end'] != '') {";
-
-                        $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '<=', \$searchData['{$field['COLUMN_NAME']}_end']];";
-                        $this->lines[] = '        }';
-                    } else {
-
-                        $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}']) && \$searchData['{$field['COLUMN_NAME']}'] != '') {";
-
-                        if (preg_match('/varchar|text/i', $field['COLUMN_TYPE'])) {
-                            $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', 'like', '%' . trim(\$searchData['{$field['COLUMN_NAME']}']) . '%'];";
-                        } else {
-                            $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '=', \$searchData['{$field['COLUMN_NAME']}']];";
-                        }
-
-                        $this->lines[] = '        }';
+                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
+                        $createAndUpdate[] = $field;
+                        continue;
                     }
+
+                    $this->lines[] = "        if (isset(\$searchData['{$field['COLUMN_NAME']}']) && \$searchData['{$field['COLUMN_NAME']}'] != '') {";
+
+                    if (preg_match('/varchar|text/i', $field['COLUMN_TYPE'])) {
+                        $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', 'like', '%' . trim(\$searchData['{$field['COLUMN_NAME']}']) . '%'];";
+                    } else {
+                        $this->lines[] = "            \$where[] = ['{$field['COLUMN_NAME']}', '=', \$searchData['{$field['COLUMN_NAME']}']];";
+                    }
+
+                    $this->lines[] = '        }';
+                }
+            }
+
+            if (count($createAndUpdate)) {
+                foreach ($createAndUpdate as $timeField) {
+
+                    $isInt = false;
+                    if (preg_match('/int\(\d+\)/i', $timeField['COLUMN_TYPE'])) {
+                        $isInt = true;
+                    }
+
+                    $this->lines[] = "        if (isset(\$searchData['{$timeField['COLUMN_NAME']}_start']) && \$searchData['{$timeField['COLUMN_NAME']}_start'] != '') {";
+
+                    if ($isInt) {
+                        $this->lines[] = "            \$searchData['{$timeField['COLUMN_NAME']}_start'] = strtotime(\$searchData['{$timeField['COLUMN_NAME']}_start']);";
+                        $this->lines[] = '';
+                    }
+
+                    $this->lines[] = "            \$where[] = ['{$timeField['COLUMN_NAME']}', '>=', \$searchData['{$timeField['COLUMN_NAME']}_start']];";
+                    $this->lines[] = '        }';
+
+                    $this->lines[] = "        if (isset(\$searchData['{$timeField['COLUMN_NAME']}_end']) && \$searchData['{$timeField['COLUMN_NAME']}_end'] != '') {";
+
+                    if ($isInt) {
+                        $this->lines[] = "            \$searchData['{$timeField['COLUMN_NAME']}_end'] = strtotime(\$searchData['{$timeField['COLUMN_NAME']}_end']);";
+                        $this->lines[] = '';
+                    }
+
+                    $this->lines[] = "            \$where[] = ['{$timeField['COLUMN_NAME']}', '<=', \$searchData['{$timeField['COLUMN_NAME']}_end']];";
+                    $this->lines[] = '        }';
                 }
             }
         }
@@ -432,17 +457,18 @@ class CreatorLogic
         $this->lines[] = '';
         if (!empty($data['TABLE_FIELDS'])) {
 
+            $createAndUpdate = [];
+
             foreach ($data['TABLE_FIELDS'] as $field) {
 
                 if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
-                    if (preg_match('/^\w*?time$/', $field['COLUMN_NAME'])) {
-                        $this->lines[] = '        $search->datetime' . "('{$field['COLUMN_NAME']}_start');";
-                        $this->lines[] = '        $search->datetime' . "('{$field['COLUMN_NAME']}_end');";
-                    } else if (preg_match('/^\w*?date$/', $field['COLUMN_NAME'])) {
-                        $this->lines[] = '        $search->date' . "('{$field['COLUMN_NAME']}_start');";
-                        $this->lines[] = '        $search->date' . "('{$field['COLUMN_NAME']}_end');";
-                    } else if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
+                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
+                        $createAndUpdate[] = $field;
+                        continue;
+                    }
+
+                    if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
                         $this->lines[] = '        $search->select' . "('{$field['COLUMN_NAME']}')->dataUrl(url('theurl'));";
                     } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
                         $this->lines[] = '        $search->multipleSelect' . "('{$field['COLUMN_NAME']}')->dataUrl(url('theurl'));";
@@ -452,6 +478,18 @@ class CreatorLogic
                         $this->lines[] = '        $search->select' . "('{$field['COLUMN_NAME']}')->options([]);";
                     } else {
                         $this->lines[] = '        $search->text' . "('{$field['COLUMN_NAME']}');";
+                    }
+                }
+            }
+
+            if (count($createAndUpdate)) {
+                foreach ($createAndUpdate as $timeField) {
+                    if (preg_match('/^\w*?date$/', $timeField['COLUMN_NAME'])) {
+                        $this->lines[] = '        $search->date' . "('{$timeField['COLUMN_NAME']}_start');";
+                        $this->lines[] = '        $search->date' . "('{$timeField['COLUMN_NAME']}_end');";
+                    } else {
+                        $this->lines[] = '        $search->datetime' . "('{$timeField['COLUMN_NAME']}_start');";
+                        $this->lines[] = '        $search->datetime' . "('{$timeField['COLUMN_NAME']}_end');";
                     }
                 }
             }
@@ -625,8 +663,8 @@ class CreatorLogic
 
         $solft_delete = $dbLogic->getFieldInfo($prefix . $table, 'delete_time') ? 1 : 0;
 
-        $create_time = $dbLogic->getFieldInfo($prefix . $table, 'create_time') ? 1 : 0;
-        $update_time = $dbLogic->getFieldInfo($prefix . $table, 'update_time') ? 1 : 0;
+        $create_time = $dbLogic->getFieldInfo($prefix . $table, 'create_time');
+        $update_time = $dbLogic->getFieldInfo($prefix . $table, 'update_time');
 
         if ($solft_delete == 1) {
             $lines[] = "use think\Model\concern\SoftDelete;";
@@ -650,7 +688,20 @@ class CreatorLogic
 
         $lines[] = "    protected \$name = '{$table}';";
         $lines[] = '';
-        $lines[] = '    protected $autoWriteTimestamp = \'datetime\';';
+
+        if ($create_time) {
+            if ($create_time['COLUMN_TYPE'] == 'datetime') {
+                $lines[] = '    protected $autoWriteTimestamp = \'datetime\';';
+            } else if ($create_time['COLUMN_TYPE'] == 'timestamp') {
+                $lines[] = '    protected $autoWriteTimestamp = \'timestamp\';';
+            } else if ($create_time['COLUMN_TYPE'] == 'date') {
+                $lines[] = '    protected $autoWriteTimestamp = \'date\';';
+            } else {
+                $lines[] = '    protected $autoWriteTimestamp = \'int\';';
+                $lines[] = '';
+                $lines[] = '    protected $dateFormat = \'Y-m-d H:i:s\';';
+            }
+        }
 
         if (!$create_time) {
             $lines[] = '';
@@ -662,8 +713,17 @@ class CreatorLogic
             $lines[] = '    protected $updateTime = false;';
         }
 
+        $datetimes = [];
+
+        trace($data['TABLE_FIELDS']);
+
         if (!empty($data['TABLE_FIELDS'])) {
             foreach ($data['TABLE_FIELDS'] as $field) {
+
+                if (!in_array($field['COLUMN_NAME'], ['delete_time', 'create_time', 'update_time']) && preg_match('/time|date/i', $field['COLUMN_NAME']) && preg_match('/int\(\d+\)/i', $field['COLUMN_TYPE'])) {
+                    $datetimes[] = $field['COLUMN_NAME'];
+                    continue;
+                }
 
                 if ($field['DISPLAYER_TYPE'] == 'belongsTo') {
                     if (empty($field['FIELD_RELATION'])) {
@@ -712,6 +772,41 @@ class CreatorLogic
             }
             $lines[] = '    }';
         }
+
+        if (count($datetimes)) {
+            $lines[] = '';
+
+            $lines[] = '    //自动生成的时间日期转换，不需要则删除';
+
+            foreach ($datetimes as $dt) {
+                $dt = Str::studly($dt);
+
+                $formmat = preg_match('/time/i', $dt) ? 'Y-m-d H:i:s' : 'Y-m-d';
+
+                $lines[] = "    public function get{$dt}Attr(\$value, \$data)";
+                $lines[] = '    {';
+                $lines[] = "        if (empty(\$value)) {";
+                $lines[] = "            return '';";
+                $lines[] = "        }";
+                $lines[] = '';
+                $lines[] = "        return is_numeric(\$value) ? date('{$formmat}', \$value) : \$value;";
+                $lines[] = '    }';
+                $lines[] = '';
+                $lines[] = "    public function set{$dt}Attr(\$value, \$data)";
+                $lines[] = '    {';
+                $lines[] = "        if (is_null(\$value)) {";
+                $lines[] = "            return null;";
+                $lines[] = "        }";
+                $lines[] = '';
+                $lines[] = "        return is_numeric(\$value) ? \$value : strtotime(\$value);";
+                $lines[] = '    }';
+            }
+
+            $lines[] = '    //时间日期转换结束';
+
+            $lines[] = '';
+        }
+
         $lines[] = '}';
         $lines[] = '';
 
