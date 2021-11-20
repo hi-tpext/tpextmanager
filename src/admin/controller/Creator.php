@@ -254,9 +254,9 @@ class Creator extends Controller
                 $field['DISPLAYER_TYPE'] = 'icon';
             } else if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'show';
-            } else if (preg_match('/^\w*?time$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/time/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                 $field['DISPLAYER_TYPE'] = 'datetime';
-            } else if (preg_match('/^\w*?date$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/date/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                 $field['DISPLAYER_TYPE'] = 'date';
             } else if (preg_match('/^\w*?content$/', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'editor';
