@@ -360,7 +360,7 @@ class CreatorLogic
                 if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
 
-                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
+                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                         $createAndUpdate[] = $field;
                         continue;
                     }
@@ -380,29 +380,14 @@ class CreatorLogic
             if (count($createAndUpdate)) {
                 foreach ($createAndUpdate as $timeField) {
 
-                    $isInt = false;
-                    if (preg_match('/int\(\d+\)/i', $timeField['COLUMN_TYPE'])) {
-                        $isInt = true;
-                    }
-
                     $this->lines[] = "        if (isset(\$searchData['{$timeField['COLUMN_NAME']}_start']) && \$searchData['{$timeField['COLUMN_NAME']}_start'] != '') {";
 
-                    if ($isInt) {
-                        $this->lines[] = "            \$searchData['{$timeField['COLUMN_NAME']}_start'] = strtotime(\$searchData['{$timeField['COLUMN_NAME']}_start']);";
-                        $this->lines[] = '';
-                    }
-
-                    $this->lines[] = "            \$where[] = ['{$timeField['COLUMN_NAME']}', '>=', \$searchData['{$timeField['COLUMN_NAME']}_start']];";
+                    $this->lines[] = "            \$where[] = ['{$timeField['COLUMN_NAME']}', '>= TIME', \$searchData['{$timeField['COLUMN_NAME']}_start']];";
                     $this->lines[] = '        }';
 
                     $this->lines[] = "        if (isset(\$searchData['{$timeField['COLUMN_NAME']}_end']) && \$searchData['{$timeField['COLUMN_NAME']}_end'] != '') {";
 
-                    if ($isInt) {
-                        $this->lines[] = "            \$searchData['{$timeField['COLUMN_NAME']}_end'] = strtotime(\$searchData['{$timeField['COLUMN_NAME']}_end']);";
-                        $this->lines[] = '';
-                    }
-
-                    $this->lines[] = "            \$where[] = ['{$timeField['COLUMN_NAME']}', '<=', \$searchData['{$timeField['COLUMN_NAME']}_end']];";
+                    $this->lines[] = "            \$where[] = ['{$timeField['COLUMN_NAME']}', '<= TIME', \$searchData['{$timeField['COLUMN_NAME']}_end']];";
                     $this->lines[] = '        }';
                 }
             }
@@ -440,7 +425,7 @@ class CreatorLogic
 
                 if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
-                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
+                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                         $createAndUpdate[] = $field;
                         continue;
                     }
@@ -691,8 +676,6 @@ class CreatorLogic
         }
 
         $datetimes = [];
-
-        trace($data['TABLE_FIELDS']);
 
         if (!empty($data['TABLE_FIELDS'])) {
             foreach ($data['TABLE_FIELDS'] as $field) {
