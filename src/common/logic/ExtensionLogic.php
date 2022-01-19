@@ -24,7 +24,7 @@ class ExtensionLogic
      */
     public function getExtendExtensions($reget = false)
     {
-        $data = cache('extend_extensions');
+        $data = cache('tpext_extend_extensions');
 
         if (!$reget && $data) {
             return $data;
@@ -36,7 +36,7 @@ class ExtensionLogic
             $data = ['empty'];
         }
 
-        cache('extend_extensions', $data);
+        cache('tpext_extend_extensions', $data);
 
         return $data;
     }
