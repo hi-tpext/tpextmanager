@@ -222,18 +222,16 @@ class Config extends Controller
                     'isRandName' => ['type' => 'radio', 'label' => '随机文件名', 'options' => [0 => '否', 1 => '是'], 'col_size' => 6, 'size' => [3, 8]],
                 ], //支持【tpext-builder】表单元素 ，不是太复杂的大多能满足。配置的值尽量为常规类型，如果是数组则会转换成json。
                 
-                /* 或者直接使用匿名方法的方式，更灵活自由：
-                '__config__' => function(\\tpext\\builder\\common\\Form \$form, &\$data){
-                    \$form->textarea('allowSuffix', '允许上传的文件后缀')->size(2, 10)->help('以英文,号分割');
-                    \$form->number('maxSize', '上传文件大小限制(MB)', 6)->size(3, 8)->required();
-                    \$form->number('isRandName', '随机文件名', 6)->size(3, 8)->options([0 => '否', 1 => '是']);
-                },
-                */
-                /* 定义保存时的回调，除非特殊情况
-                '__saving__' => function(\$data, \$values){
-                    // \$data 为表单提交数据,\$values为经过处理的数据
-                    return \$values;
-                },*/
+                // '__config__' => function(\\tpext\\builder\\common\\Form \$form, &\$data){
+                //     \$form->textarea('allowSuffix', '允许上传的文件后缀')->size(2, 10)->help('以英文,号分割');
+                //     \$form->number('maxSize', '上传文件大小限制(MB)', 6)->size(3, 8)->required();
+                //     \$form->radio('isRandName', '随机文件名', 6)->size(3, 8)->options([0 => '否', 1 => '是']);
+                // },
+                // 定义保存时的回调，除非特殊情况
+                // '__saving__' => function(\$data, \$values){
+                //     // \$data 为表单提交数据,\$values为经过处理的数据
+                //     return \$values;
+                // },
             ];
             //使用 \\tpext\\common\\model\\WebConfig::config('myconfig');//不支持config('myconfig');
             </pre>
