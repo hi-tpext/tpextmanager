@@ -700,7 +700,7 @@ class Extension extends Controller
             $this->extensions = ExtLoader::getExtensions();
 
             $findInstance = null;
-            $findKey = null;
+            $findKey = '';
             $findInstall = false;
 
             foreach ($this->extensions as $key => $instance) {
@@ -821,7 +821,7 @@ class Extension extends Controller
             $this->extensions = ExtLoader::getExtensions();
 
             $findInstance = null;
-            $findKey = null;
+            $findKey = '';
 
             foreach ($this->extensions as $key => $instance) {
 
