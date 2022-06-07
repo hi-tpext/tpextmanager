@@ -197,11 +197,16 @@ class ExtensionLogic
                     $extends = array_merge($extends, $this->scanExtends($sonDir));
                 } else {
 
-                    if (preg_match('/.+?\\\extend\\\(.+?)\.php$/i', str_replace('/', '\\', $sonDir), $mtches)) {
+                    if (
+                        preg_match('/.+?\\\extend\\\(.+?)\.php$/i', str_replace('/', '\\', $sonDir), $mtches)) {
 
                         $content = file_get_contents($sonDir); //通过文件内容判断是否为扩展。class_exists方式的$autoload有点问题
 
                         if (
+                            preg_match('/is_tpext_extension/i', $content) //在扩展中加个注释表明是扩展。如下：
+                            //is_tpext_extension
+                            /*is_tpext_extension*/
+                            ||
                             preg_match('/\$version\s*=/i', $content)
                             && preg_match('/\$name\s*=/i', $content)
                             && preg_match('/\$title\s*=/i', $content)
