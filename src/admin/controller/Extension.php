@@ -29,7 +29,7 @@ class Extension extends Controller
 
     protected $extensions = [];
 
-    protected $remoteUrl = 'https://gitee.com/tpext/extensions/raw/main/extensions.json';
+    protected $remoteUrl = 'https://codeberg.org/hi-tpext/extensions/raw/branch/main/extensions.json';
 
     protected $remote = 0;
 
