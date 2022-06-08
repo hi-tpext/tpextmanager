@@ -2,7 +2,6 @@
 
 namespace tpext\manager\admin\controller;
 
-use think\app\command\Build;
 use think\Controller;
 use think\facade\Config;
 use think\facade\Db;
@@ -30,7 +29,7 @@ class Extension extends Controller
 
     protected $extensions = [];
 
-    protected $remoteUrl = 'https://codeberg.org/hi-tpext/extensions/raw/branch/main/extensions.json';
+    
 
     protected $remote = 0;
 
@@ -41,13 +40,20 @@ class Extension extends Controller
      */
     protected $dataModel;
 
+    /**
+     * Undocumented variable
+     *
+     * @var ExtensionLogic
+     */
+    protected $extensionLogic;
+
     protected function initialize()
     {
         $this->pageTitle = '扩展管理';
 
-        $logic = new ExtensionLogic;
+        $this->extensionLogic = new ExtensionLogic;
 
-        $logic->getExtendExtensions(true);
+        $this->extensionLogic->getExtendExtensions(true);
 
         ExtLoader::clearCache();
 
@@ -316,9 +322,7 @@ class Extension extends Controller
 
         if ($this->remote) {
 
-            $data = file_get_contents($this->remoteUrl);
-
-            $data = $data ? json_decode($data, 1) : [];
+            $data = $this->extensionLogic->getRemoteJson();
 
             $total = count($data);
 
@@ -352,7 +356,7 @@ class Extension extends Controller
                         break;
                     }
                 }
-                $extend_download = $d['extend_download'] && preg_match('/^https?:\/\/.+?\.zip$/i', $d['extend_download']);
+                $extend_download = $d['extend_download'] && preg_match('/^https?:\/\/.+?$/i', $d['extend_download']);
                 $d['__h_up__'] = $d['now_version'] == $d['version'] || !$extend_download || !$d['download'];
                 $d['__h_dwn__'] = $d['now_version'] == $d['version'] || !$extend_download || $d['download'];
             }
@@ -681,9 +685,7 @@ class Extension extends Controller
 
         $name = str_replace('-', '.', $key);
 
-        $list = file_get_contents($this->remoteUrl);
-
-        $list = $list ? json_decode($list, 1) : [];
+        $list = $this->extensionLogic->getRemoteJson();
 
         $data = null;
 
@@ -706,19 +708,17 @@ class Extension extends Controller
 
             $this->checkToken();
 
-            $logic = new ExtensionLogic;
-
-            $updateRes = $logic->download($data['extend_download'], 2);
+            $updateRes = $this->extensionLogic->download($data['extend_download'], 2);
 
             if (!$updateRes) {
 
-                $errors = $logic->getErrors();
+                $errors = $this->extensionLogic->getErrors();
 
                 $builder->content()->display('<h5>下载解压时出错：</h5>' . implode('<br>', $errors));
                 return $builder->render();
             }
 
-            $logic->getExtendExtensions(true);
+            $this->extensionLogic->getExtendExtensions(true);
 
             ExtLoader::clearCache();
 
@@ -804,9 +804,7 @@ class Extension extends Controller
 
         $name = str_replace('-', '.', $key);
 
-        $list = file_get_contents($this->remoteUrl);
-
-        $list = $list ? json_decode($list, 1) : [];
+        $list = $this->extensionLogic->getRemoteJson();
 
         $data = null;
 
@@ -827,19 +825,17 @@ class Extension extends Controller
 
             $this->checkToken();
 
-            $logic = new ExtensionLogic;
-
-            $updateRes = $logic->download($data['extend_download'], 1);
+            $updateRes = $this->extensionLogic->download($data['extend_download'], 1);
 
             if (!$updateRes) {
 
-                $errors = $logic->getErrors();
+                $errors = $this->extensionLogic->getErrors();
 
                 $builder->content()->display('<h5>下载解压时出错：</h5>' . implode('<br>', $errors));
                 return $builder->render();
             }
 
-            $logic->getExtendExtensions(true);
+            $this->extensionLogic->getExtendExtensions(true);
 
             ExtLoader::clearCache();
 
@@ -936,8 +932,6 @@ class Extension extends Controller
         $fileurl = input('fileurl');
         $validate = input('validate');
 
-        $logic = new ExtensionLogic;
-
         if (!file_exists($checkFile)) {
             $this->error('[extend/validate.txt]文件不存在');
         }
@@ -969,16 +963,16 @@ class Extension extends Controller
             $this->error('文件验证失败：验证字符串不匹配');
         }
 
-        $installRes = $logic->installExtend('.' . $fileurl, 1);
+        $installRes = $this->extensionLogic->installExtend('.' . $fileurl, 1);
 
         if (!$installRes) {
 
-            $errors = $logic->getErrors();
+            $errors = $this->extensionLogic->getErrors();
 
             $this->error('解压安装包时出错：' . implode('<br>', $errors));
         }
 
-        $logic->getExtendExtensions(true);
+        $this->extensionLogic->getExtendExtensions(true);
 
         ExtLoader::clearCache();
 

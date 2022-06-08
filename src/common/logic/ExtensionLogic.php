@@ -6,6 +6,8 @@ class ExtensionLogic
 {
     protected $errors = [];
 
+    protected $remoteUrl = 'https://codeberg.org/hi-tpext/extensions/raw/branch/main/extensions.json';
+
     /**
      * Undocumented function
      *
@@ -14,6 +16,32 @@ class ExtensionLogic
     final public function getErrors()
     {
         return $this->errors;
+    }
+
+     /**
+     * Undocumented function
+     *
+     * @return array
+     */
+    public function getRemoteJson()
+    {
+        $jsonFile = app()->getRuntimePath() . 'extend' . DIRECTORY_SEPARATOR . 'extension.json';
+
+        $data = '';
+
+        if (is_file($jsonFile) && time() - filectime($jsonFile) <  60 * 60) {
+            //
+            $data = file_get_contents($jsonFile);
+        } else {
+            $data = file_get_contents($this->remoteUrl);
+            if ($data) {
+                file_put_contents($jsonFile, $data);
+            }
+        }
+
+        $data = $data ? json_decode($data, true) : [];
+
+        return $data;
     }
 
     /**
