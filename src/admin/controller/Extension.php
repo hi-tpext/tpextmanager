@@ -29,7 +29,7 @@ class Extension extends Controller
 
     protected $extensions = [];
 
-    
+
 
     protected $remote = 0;
 
@@ -564,7 +564,7 @@ class Extension extends Controller
                     $text[] = $err->getMessage();
                 }
 
-                $builder->content()->display('<h5>执行出错：</h5>' . implode('<br>', $text));
+                $builder->content()->display('<h5>执行出错：</h5>{$errors|raw}', ['errors' => implode('<br>', $text)]);
 
                 return $builder->render();
             }
@@ -612,7 +612,7 @@ class Extension extends Controller
                     $text[] = $err->getMessage();
                 }
 
-                $builder->content()->display('<h5>执行出错：</h5>' . implode('<br>', $text));
+                $builder->content()->display('<h5>执行出错：</h5>{$errors|raw}', ['errors' => implode('<br>', $text)]);
 
                 return $builder->render();
             }
@@ -660,7 +660,7 @@ class Extension extends Controller
                     $text[] = $err->getMessage();
                 }
 
-                $builder->content()->display('<h5>执行出错：</h5>' . implode('<br>', $text));
+                $builder->content()->display('<h5>执行出错：</h5>{$errors|raw}', ['errors' => implode('<br>', $text)]);
 
                 return $builder->render();
             }
@@ -714,13 +714,13 @@ class Extension extends Controller
 
                 $errors = $this->extensionLogic->getErrors();
 
-                $builder->content()->display('<h5>下载解压时出错：</h5>' . implode('<br>', $errors));
+                $builder->content()->display('<h5>下载解压时出错：</h5>{$errors|raw}', ['errors' => implode('<br>', $errors)]);
                 return $builder->render();
             }
 
             $this->extensionLogic->getExtendExtensions(true);
 
-            ExtLoader::clearCache();
+            ExtLoader::clearCache(true);
 
             ExtLoader::bindExtensions();
 
@@ -762,11 +762,11 @@ class Extension extends Controller
             if ($findInstall) {
                 $upgradeUrl = url('upgrade', ['key' => $findKey])->__toString();
 
-                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $upgradeUrl . '">点此去升级<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>');
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="{url|raw}">点此去升级<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $upgradeUrl]);
             } else {
                 $installUrl = url('install', ['key' => $findKey])->__toString();
 
-                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>');
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="{url|raw}">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $installUrl]);
             }
 
             return $builder->render();
@@ -831,13 +831,13 @@ class Extension extends Controller
 
                 $errors = $this->extensionLogic->getErrors();
 
-                $builder->content()->display('<h5>下载解压时出错：</h5>' . implode('<br>', $errors));
+                $builder->content()->display('<h5>下载解压时出错：</h5>{$errors|raw}', ['errors' => implode('<br>', $errors)]);
                 return $builder->render();
             }
 
             $this->extensionLogic->getExtendExtensions(true);
 
-            ExtLoader::clearCache();
+            ExtLoader::clearCache(true);
 
             ExtLoader::bindExtensions();
 
@@ -868,7 +868,7 @@ class Extension extends Controller
 
             $installUrl = url('install', ['key' => $findKey])->__toString();
 
-            $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="' . $installUrl . '">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>');
+            $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="{$url|raw}">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $installUrl]);
             return $builder->render();
         } else {
 
@@ -974,7 +974,7 @@ class Extension extends Controller
 
         $this->extensionLogic->getExtendExtensions(true);
 
-        ExtLoader::clearCache();
+        ExtLoader::clearCache(true);
 
         ExtLoader::bindExtensions();
 

@@ -28,9 +28,7 @@ class ExtensionLogic
         $jsonFile = app()->getRuntimePath() . 'extend' . DIRECTORY_SEPARATOR . 'extension.json';
 
         $data = '';
-
-        if (is_file($jsonFile) && time() - filectime($jsonFile) <  60 * 60) {
-            //
+        if (is_file($jsonFile) && time() - filemtime($jsonFile) <  60 * 60) {
             $data = file_get_contents($jsonFile);
         } else {
             $data = file_get_contents($this->remoteUrl);
