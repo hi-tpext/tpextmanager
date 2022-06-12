@@ -735,11 +735,11 @@ class Extension extends Controller
             if ($findInstall) {
                 $upgradeUrl = url('upgrade', ['key' => $findKey]);
 
-                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="{url|raw}">点此去升级<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $upgradeUrl]);
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a class="btn btn-xs btn-success" href="{$url|raw}">点此去升级</a></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $upgradeUrl]);
             } else {
                 $installUrl = url('install', ['key' => $findKey]);
 
-                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="{url|raw}">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $installUrl]);
+                $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a class="btn btn-xs btn-success" href="{$url|raw}">点此去安装</a></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $installUrl]);
             }
 
             return $builder->render();
@@ -841,7 +841,7 @@ class Extension extends Controller
 
             $installUrl = url('install', ['key' => $findKey]);
 
-            $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a href="{$url|raw}">点此去安装<a/></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $installUrl]);
+            $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a class="btn btn-xs btn-success" href="{$url|raw}">点此去安装</a></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $installUrl]);
             return $builder->render();
         } else {
 
