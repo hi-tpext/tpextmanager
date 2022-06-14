@@ -84,7 +84,7 @@ class Config extends Controller
             foreach ($this->extensions as $key => $instance) {
                 $is_install = 0;
 
-                $default = $instance->defaultConfig();
+                $default = $instance->defaultConfig(true);
 
                 $has_config = !empty($default);
 
