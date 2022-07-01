@@ -154,6 +154,7 @@ class CreatorLogic
         $this->lines[] = '';
         $this->lines[] = "use {$modelNamespace}{$modelName} as {$modelName}Model;";
         $this->lines[] = "use think\\Controller;";
+        $this->lines[] = "use tpext\\think\\App;";
         $this->lines[] = "use think\\facade\\Lang;";
         $this->lines[] = "use tpext\\builder\\traits\actions;";
         $this->lines[] = '';
@@ -202,7 +203,7 @@ class CreatorLogic
         }
 
         $this->lines[] = '';
-        $this->lines[] = "        Lang::load(app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['app', 'admin', 'lang', config('lang.default_lang'), '" . strtolower($modelName) . "' . '.php']));";
+        $this->lines[] = "        Lang::load(App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['app', 'admin', 'lang', App::getDefaultLang(), '" . strtolower($modelName) . "' . '.php']));";
         $this->lines[] = '    }';
     }
 
@@ -578,7 +579,7 @@ class CreatorLogic
         $this->lines[] = '     * @param integer $id';
         $this->lines[] = '     * @return mixed';
         $this->lines[] = '     */';
-        $this->lines[] = '    private function save($id = 0)';
+        $this->lines[] = '    protected function save($id = 0)';
         $this->lines[] = '    {';
 
         $this->lines[] = '        $data = request()->post();';

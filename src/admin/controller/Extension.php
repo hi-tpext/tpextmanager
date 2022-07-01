@@ -2,21 +2,23 @@
 
 namespace tpext\manager\admin\controller;
 
+use think\facade\Db;
+use tpext\think\App;
 use think\Controller;
 use think\facade\Config;
-use think\facade\Db;
+use Webman\Config as WConfig;
+use tpext\common\ExtLoader;
+use tpext\common\TpextCore;
+use tpext\manager\common\Module;
 use tpext\builder\common\Builder;
-use tpext\builder\common\Module as builderRes;
+use tpext\common\Module as BaseModule;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
-use tpext\common\ExtLoader;
+use tpext\builder\common\Module as builderRes;
+use tpext\manager\common\logic\ExtensionLogic;
 use tpext\common\model\Extension as ExtensionModel;
-use tpext\common\Module as BaseModule;
-use tpext\common\TpextCore;
 use tpext\lightyearadmin\common\Resource as LightyearRes;
 use tpext\builder\mdeditor\common\Resource as MdeditorRes;
-use tpext\manager\common\Module;
-use tpext\manager\common\logic\ExtensionLogic;
 
 /**
  * Undocumented class
@@ -28,8 +30,6 @@ class Extension extends Controller
     use HasIndex;
 
     protected $extensions = [];
-
-
 
     protected $remote = 0;
 
@@ -55,7 +55,13 @@ class Extension extends Controller
 
         $this->extensionLogic->getExtendExtensions(true);
 
-        ExtLoader::clearCache();
+        if (ExtLoader::isWebman()) {
+            //常驻内存，每次都重新获取
+            ExtLoader::clearCache(true);
+            ExtLoader::bindExtensions();
+        } else {
+            ExtLoader::clearCache();
+        }
 
         $this->extensions = ExtLoader::getExtensions();
 
@@ -120,7 +126,13 @@ class Extension extends Controller
                 $data['type'] = 'mysql';
                 $data['database'] = 'mysql';
 
-                $config = array_merge(Config::get('database'), $data);
+                $config = [];
+
+                if (ExtLoader::isWebman()) {
+                    $config = array_merge(WConfig::get('thinkorm'), $data);
+                } else {
+                    $config = array_merge(Config::get('database'), $data);
+                }
 
                 try {
                     Db::connect('mysql')->connect($config);
@@ -152,7 +164,14 @@ class Extension extends Controller
                 $data['password'] = $data['new_password'];
             } else {
                 $data['type'] = 'mysql';
-                $config = array_merge(Config::get('database'), $data);
+
+                $config = [];
+
+                if (ExtLoader::isWebman()) {
+                    $config = array_merge(WConfig::get('thinkorm'), $data);
+                } else {
+                    $config = array_merge(Config::get('database'), $data);
+                }
 
                 try {
                     Db::connect('mysql')->connect($config);
@@ -165,40 +184,54 @@ class Extension extends Controller
 
             //配置信息写入文件
             try {
-                $envStr = '';
 
-                if (is_file(app()->getRootPath() . '.env')) {
-                    $envStr = file_get_contents(app()->getRootPath() . '.env');
-                } else if (is_file(app()->getRootPath() . '.example.env')) {
-                    $envStr = file_get_contents(app()->getRootPath() . '.example.env');
+                if (ExtLoader::isWebman()) {
+                    $databaseStr = file_get_contents(App::getConfigPath() . 'thinkorm.php');
+
+                    $replace = ['hostname', 'database', 'username', 'password', 'hostport', 'charset', 'prefix'];
+
+                    foreach ($replace as $rep) {
+                        $val = $data[$rep];
+                        $databaseStr = preg_replace('/([\'\"]' . $rep . '[\'\"]\s*=>\s*)[\'\"][^\'\"]*?[\'\"]/', "$1'{$val}'", $databaseStr);
+                    }
+
+                    file_put_contents(App::getConfigPath() . 'thinkorm.php', $databaseStr);
                 } else {
-                    $envStr = "[DATABASE]";
+                    $envStr = '';
+
+                    if (is_file(App::getRootPath() . '.env')) {
+                        $envStr = file_get_contents(App::getRootPath() . '.env');
+                    } else if (is_file(App::getRootPath() . '.example.env')) {
+                        $envStr = file_get_contents(App::getRootPath() . '.example.env');
+                    } else {
+                        $envStr = "[DATABASE]";
+                    }
+
+                    $tplStr = ""
+                        . "[DATABASE]" . PHP_EOL
+                        . "TYPE = mysql" . PHP_EOL
+                        . "HOSTNAME = @hostname" . PHP_EOL
+                        . "DATABASE = @database" . PHP_EOL
+                        . "USERNAME = @username" . PHP_EOL
+                        . "PASSWORD = @password" . PHP_EOL
+                        . "HOSTPORT = @hostport" . PHP_EOL
+                        . "CHARSET = @charset" . PHP_EOL
+                        . "PREFIX = @prefix" . PHP_EOL
+                        . "DEBUG = true" . PHP_EOL;
+
+                    //
+
+                    $replace = ['hostname', 'database', 'username', 'password', 'hostport', 'charset', 'prefix'];
+
+                    foreach ($replace as $rep) {
+                        $val = $data[$rep];
+                        $tplStr = str_replace('@' . $rep, $val, $tplStr);
+                    }
+
+                    $envStr = preg_replace('/\[DATABASE\][^\[\]]*/is', $tplStr, $envStr) . PHP_EOL;
+
+                    file_put_contents(App::getRootPath() . '.env', $envStr);
                 }
-
-                $tplStr = ""
-                    . "[DATABASE]" . PHP_EOL
-                    . "TYPE = mysql" . PHP_EOL
-                    . "HOSTNAME = @hostname" . PHP_EOL
-                    . "DATABASE = @database" . PHP_EOL
-                    . "USERNAME = @username" . PHP_EOL
-                    . "PASSWORD = @password" . PHP_EOL
-                    . "HOSTPORT = @hostport" . PHP_EOL
-                    . "CHARSET = @charset" . PHP_EOL
-                    . "PREFIX = @prefix" . PHP_EOL
-                    . "DEBUG = true" . PHP_EOL;
-
-                //
-
-                $replace = ['hostname', 'database', 'username', 'password', 'hostport', 'charset', 'prefix'];
-
-                foreach ($replace as $rep) {
-                    $val = $data[$rep];
-                    $tplStr = str_replace('@' . $rep, $val, $tplStr);
-                }
-
-                $envStr = preg_replace('/\[DATABASE\][^\[\]]*/is', $tplStr, $envStr) . PHP_EOL;
-
-                file_put_contents(app()->getRootPath() . '.env', $envStr);
             } catch (\Throwable $e) {
                 trace($e->__toString());
                 $this->error('写入配置信息到文件失败-' . $e->getMessage());
@@ -249,7 +282,10 @@ class Extension extends Controller
             );
 
             $url = url('prepare');
-            $form->raw('tips', '提示')->value('<p>数据库配置信息将保存在<b>`config/database.php`</b>文件中，请确保程序对此文件有可写权限。'
+
+            $configFile = ExtLoader::isWebman() ? 'config/thinkorm.php' : 'config/database.php';
+
+            $form->raw('tips', '提示')->value('<p>数据库配置信息将保存在<b>[' . $configFile . ']</b>文件中，请确保程序对此文件有可写权限。'
                 . '如果您不想通过此程序修改配置，请手动修改数据库配置文件，<a href="' . $url . '">后点此进入</a>下一步，如果仍然回到此页面，请检查配置。</p>');
 
             $data = session('dbconfig');
@@ -522,8 +558,10 @@ class Extension extends Controller
         $table->useChooseColumns(false); //切换远程和本地表格列不同，会有问题，干脆禁用。
     }
 
-    public function install($key = '')
+    public function install()
     {
+        $key = input('key');
+
         if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
@@ -575,8 +613,10 @@ class Extension extends Controller
         }
     }
 
-    public function uninstall($key = '')
+    public function uninstall()
     {
+        $key = input('key');
+
         if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
@@ -624,8 +664,10 @@ class Extension extends Controller
         }
     }
 
-    public function upgrade($key = '')
+    public function upgrade()
     {
+        $key = input('key');
+
         if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
@@ -677,8 +719,11 @@ class Extension extends Controller
      * @title 更新远程扩展
      * @return mixed
      */
-    public function update($key = '', $now_version = '')
+    public function update()
     {
+        $key = input('key');
+        $now_version = input('now_version');
+
         if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
@@ -796,8 +841,10 @@ class Extension extends Controller
      * @title 新下载远程扩展
      * @return mixed
      */
-    public function download($key)
+    public function download()
     {
+        $key = input('key');
+
         if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
@@ -914,7 +961,7 @@ class Extension extends Controller
     {
         $builder = Builder::getInstance();
 
-        $checkFile = app()->getRootPath() . 'extend' . DIRECTORY_SEPARATOR . 'validate.txt';
+        $checkFile = App::getRootPath() . 'extend' . DIRECTORY_SEPARATOR . 'validate.txt';
 
         if (request()->isGet()) {
 
@@ -948,7 +995,7 @@ class Extension extends Controller
 
             if ($try_validate) {
 
-                $time_gone = $_SERVER['REQUEST_TIME'] - $try_validate;
+                $time_gone = time() - $try_validate;
 
                 if ($time_gone < $errors) {
                     $this->error('错误次数过多，请' . ($errors - $time_gone) . '秒后再试');
@@ -956,7 +1003,7 @@ class Extension extends Controller
             }
 
             $errors += 1;
-            session('admin_try_extend_validate', $_SERVER['REQUEST_TIME']);
+            session('admin_try_extend_validate', time());
             session('admin_try_extend_validate_errors', $errors);
 
             sleep(2);
@@ -996,9 +1043,9 @@ class Extension extends Controller
         $menus = $isModule ? $instance->getMenus() : [];
 
         $bindModules = [];
-        foreach ($modules as $module => $controlers) {
-            foreach ($controlers as $controler) {
-                $bindModules[] = '/' . $module . '/' . $controler . '/*';
+        foreach ($modules as $module => $controllers) {
+            foreach ($controllers as $controller) {
+                $bindModules[] = '/' . $module . '/' . $controller . '/*';
             }
         }
 
