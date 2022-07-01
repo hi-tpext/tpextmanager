@@ -2,6 +2,9 @@
 
 namespace tpext\manager\common\logic;
 
+use tpext\think\App;
+use think\facade\Cache;
+
 class ExtensionLogic
 {
     protected $errors = [];
@@ -25,7 +28,13 @@ class ExtensionLogic
      */
     public function getRemoteJson()
     {
-        $jsonFile = app()->getRuntimePath() . 'extend' . DIRECTORY_SEPARATOR . 'extension.json';
+        $dir = App::getRuntimePath() . 'extend' . DIRECTORY_SEPARATOR;
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $jsonFile = $dir . 'extension.json';
 
         $data = '';
         if (is_file($jsonFile) && time() - filemtime($jsonFile) <  60 * 60) {
@@ -50,19 +59,19 @@ class ExtensionLogic
      */
     public function getExtendExtensions($reget = false)
     {
-        $data = cache('tpext_extend_extensions');
+        $data = Cache::get('tpext_extend_extensions');
 
         if (!$reget && $data) {
             return $data;
         }
 
-        $data = $this->scanExtends(app()->getRootPath() . 'extend');
+        $data = $this->scanExtends(App::getRootPath() . 'extend');
 
         if (empty($data)) {
             $data = ['empty'];
         }
 
-        cache('tpext_extend_extensions', $data);
+        Cache::set('tpext_extend_extensions', $data);
 
         return $data;
     }
@@ -80,7 +89,7 @@ class ExtensionLogic
 
         $file = time() . '_' . mt_rand(100, 999) . '.zip';
 
-        $dir = app()->getRuntimePath() . 'extend' . DIRECTORY_SEPARATOR;
+        $dir = App::getRuntimePath() . 'extend' . DIRECTORY_SEPARATOR;
 
         if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
@@ -122,7 +131,7 @@ class ExtensionLogic
                     return false;
                 }
 
-                $dir = app()->getRootPath() . 'extend' . DIRECTORY_SEPARATOR;
+                $dir = App::getRootPath() . 'extend' . DIRECTORY_SEPARATOR;
 
                 if (!file_exists($dir)) {
                     mkdir($dir, 0775, true);

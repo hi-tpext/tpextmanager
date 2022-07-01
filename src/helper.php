@@ -1,6 +1,7 @@
 <?php
 
 use tpext\common\ExtLoader;
+use tpext\manager\common\behavior\Extensions;
 
 $classMap = [
     'tpext\\manager\\common\\Module'
@@ -8,4 +9,4 @@ $classMap = [
 
 ExtLoader::addClassMap($classMap);
 
-ExtLoader::watch('tpext_find_extensions', tpext\manager\common\behavior\Extensions::class, true, '初始化tpext');
+ExtLoader::watch('tpext_find_extensions', Extensions::class, true, '初始化tpext');

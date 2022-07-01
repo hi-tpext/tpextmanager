@@ -108,8 +108,10 @@ class Dbtable extends Controller
         return $builder->render();
     }
 
-    public function edit($id)
+    public function edit()
     {
+        $id = input('id');
+
         if (request()->isPost()) {
             return $this->save($id);
         }
@@ -485,8 +487,10 @@ class Dbtable extends Controller
      * @title 字段管理
      * @return mixed
      */
-    public function fieldlist($name)
+    public function fieldlist()
     {
+        $name = input('name');
+
         if (request()->isPost()) {
             return $this->savefields($name);
         }
@@ -624,8 +628,10 @@ class Dbtable extends Controller
      * @title 查看数据
      * @return mixed
      */
-    public function datalist($name)
+    public function datalist()
     {
+        $name = input('name');
+
         $tableInfo = $this->dbLogic->getTableInfo($name);
 
         $builder = $this->builder('查看数据', $name . '[' . $tableInfo['TABLE_COMMENT'] . ']');
@@ -705,8 +711,12 @@ class Dbtable extends Controller
      * @title 查看数据-详情
      * @return mixed
      */
-    public function dataview($name, $id, $pk)
+    public function dataview()
     {
+        $name = input('name');
+        $id = input('id');
+        $pk = input('pk');
+
         $tableInfo = $this->dbLogic->getTableInfo($name);
 
         $builder = $this->builder('查看数据', $name . '[' . $tableInfo['TABLE_COMMENT'] . ']');

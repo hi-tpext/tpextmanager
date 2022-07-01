@@ -2,13 +2,14 @@
 
 namespace tpext\manager\admin\controller;
 
+use tpext\think\App;
 use think\Controller;
-use tpext\builder\common\Builder;
+use tpext\common\ExtLoader;
+use tpext\common\TpextCore;
 use tpext\builder\Common\Form;
 use tpext\builder\common\Table;
-use tpext\common\ExtLoader;
+use tpext\builder\common\Builder;
 use tpext\common\model\WebConfig;
-use tpext\common\TpextCore;
 
 /**
  * Undocumented class
@@ -36,13 +37,15 @@ class Config extends Controller
         $this->dataModel = new WebConfig;
     }
 
-    public function index($confkey = '')
+    public function index()
     {
+        $confkey = input('confkey');
+
         $builder = Builder::getInstance('配置管理', '配置修改');
 
         $installed = ExtLoader::getInstalled();
 
-        $rootPath = app()->getRootPath();
+        $rootPath = App::getRootPath();
 
         if (request()->isPut()) {
             $data = request()->post();
@@ -168,7 +171,7 @@ class Config extends Controller
                 $this->error($result);
             }
 
-            $filePath = app()->getRootPath() . $data['file'];
+            $filePath = App::getRootPath() . $data['file'];
 
             if (!is_file($filePath)) {
                 $this->error('文件不存在，请核查');
@@ -248,8 +251,10 @@ EOT;
         }
     }
 
-    public function edit($key = '')
+    public function edit()
     {
+        $key = input('key');
+
         if (empty($key)) {
             return Builder::getInstance()->layer()->close(0, '参数有误！');
         }
@@ -264,7 +269,7 @@ EOT;
 
         $theConfig = $this->dataModel->where(['key' => $key])->find();
 
-        $rootPath = app()->getRootPath();
+        $rootPath = App::getRootPath();
 
         $default = [];
 
@@ -411,8 +416,10 @@ EOT;
      * 
      * @return void
      */
-    public function view($id)
+    public function view()
     {
+        $id = input('id');
+
         if (request()->isGet()) {
 
             $builder = Builder::getInstance('配置管理', '配置查看');
@@ -600,7 +607,7 @@ EOT;
             return $this->dataModel->save(['config' => json_encode($values, JSON_UNESCAPED_UNICODE)], ['key' => $configKey]);
         }
 
-        $filePath = str_replace(app()->getRootPath(), '', $filePath);
+        $filePath = str_replace(App::getRootPath(), '', $filePath);
 
         return $this->dataModel->save(['key' => $configKey, 'file' => $filePath, 'config' => json_encode($values, JSON_UNESCAPED_UNICODE)]);
     }

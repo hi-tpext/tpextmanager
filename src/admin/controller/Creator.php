@@ -2,17 +2,17 @@
 
 namespace tpext\manager\admin\controller;
 
-use think\Controller;
 use think\Loader;
+use tpext\think\App;
+use think\Controller;
+use think\facade\Validate;
 use tpext\manager\common\Module;
 use tpext\builder\common\Wrapper;
+use tpext\manager\common\logic\DbLogic;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
 use tpext\manager\common\logic\CreatorLogic;
-use tpext\manager\common\logic\DbLogic;
 use tpext\manager\common\model\TableRelation;
-use think\facade\Validate;
-
 
 /**
  * Undocumented class
@@ -106,8 +106,10 @@ class Creator extends Controller
         return $data;
     }
 
-    public function edit($id)
+    public function edit()
     {
+        $id = input('id');
+
         if (request()->isGet()) {
             $builder = $this->builder($this->pageTitle, $this->editText);
             $data = $this->dbLogic->getTableInfo($id);
@@ -320,11 +322,11 @@ class Creator extends Controller
         $controllerName = '';
 
         if (preg_match('/^\w+$/', $data['controller'])) {
-            $dir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', '']);
+            $dir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', '']);
 
             $controllerName = ucfirst(strtolower(Loader::parseName($data['controller'], 1)));
         } else if (preg_match('/^(\w+)[\/](\w+)$/', $data['controller'], $mch)) {
-            $dir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', strtolower($mch[1]), '']);
+            $dir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'controller', strtolower($mch[1]), '']);
 
             $controllerName = ucfirst(strtolower(Loader::parseName($mch[2], 1)));
         } else {
@@ -341,10 +343,10 @@ class Creator extends Controller
         $mdir = '';
         if (Module::getInstance()->config('model_namespace') == 'common') {
             $modelNamespace = 'app\\common\\model';
-            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
+            $mdir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
         } else {
             $modelNamespace = 'app\\admin\\model';
-            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
+            $mdir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
         }
 
         if (!is_dir($mdir)) {
@@ -368,7 +370,7 @@ class Creator extends Controller
 
         $fields = $this->dbLogic->getFields($data['TABLE_NAME'], 'COLUMN_NAME,COLUMN_COMMENT');
 
-        $ldir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', config('default_lang'), '']);
+        $ldir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', App::getDefaultLang(), '']);
 
         if (!is_dir($ldir)) {
             mkdir($ldir, 0755, true);
@@ -428,8 +430,10 @@ class Creator extends Controller
      * @title 表关联管理
      * @return mixed
      */
-    public function relations($id)
+    public function relations()
     {
+        $id = input('id');
+
         $builder = $this->builder($this->pageTitle, '表关联');
 
         $tableInfo = $this->dbLogic->getTableInfo($id);
@@ -442,10 +446,10 @@ class Creator extends Controller
         $mdir = '';
         if (Module::getInstance()->config('model_namespace') == 'common') {
             $modelNamespace = 'app\\common\\model';
-            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
+            $mdir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'common', 'model', '']);
         } else {
             $modelNamespace = 'app\\admin\\model';
-            $mdir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
+            $mdir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'model', '']);
         }
 
         if (!is_dir($mdir)) {
@@ -483,7 +487,7 @@ class Creator extends Controller
             $form->show('TABLE_NAME', '表名称')->value($id);
             $form->raw('model_namespace', 'model命名空间')->value('<b>app\\' . Module::getInstance()->config('model_namespace') . '\\model\\</b>可在扩展配置中修改');
             if (is_file($modelFileName)) {
-                $form->raw('tips', '提示')->value('已存在模型文件，将覆被盖：<b>' . str_replace(app()->getRootPath(), '', $modelFileName) . '</b>');
+                $form->raw('tips', '提示')->value('已存在模型文件，将覆被盖：<b>' . str_replace(App::getRootPath(), '', $modelFileName) . '</b>');
             }
             $form->text('model_title', 'model注释')->default($tableInfo['TABLE_COMMENT'])->required();
 
@@ -689,8 +693,10 @@ class ShopGoodsExtend extends Model
      * @title 翻译生成
      * @return mixed
      */
-    public function lang($id)
+    public function lang()
     {
+        $id = input('id');
+
         $builder = $this->builder($this->pageTitle, '翻译生成');
         $fields = $this->dbLogic->getFields($id, 'COLUMN_NAME,COLUMN_TYPE,COLUMN_COMMENT');
 
@@ -700,7 +706,7 @@ class ShopGoodsExtend extends Model
 
         $modelName = Loader::parseName($table, 1);
 
-        $ldir = app()->getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', config('default_lang'), '']);
+        $ldir = App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', App::getDefaultLang(), '']);
 
         if (!is_dir($ldir)) {
             mkdir($ldir, 0755, true);
@@ -742,7 +748,7 @@ class ShopGoodsExtend extends Model
                     }
                 }
 
-                $form->raw('tips', '提示')->value('已存在翻译文件，将覆被盖：<b>' . str_replace(app()->getRootPath(), '', $filePath) . '</b>');
+                $form->raw('tips', '提示')->value('已存在翻译文件，将覆被盖：<b>' . str_replace(App::getRootPath(), '', $filePath) . '</b>');
             } else {
                 foreach ($fields as &$field) {
                     $field['__can_delete__'] = 0;
