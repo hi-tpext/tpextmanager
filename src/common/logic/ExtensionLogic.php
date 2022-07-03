@@ -21,7 +21,7 @@ class ExtensionLogic
         return $this->errors;
     }
 
-     /**
+    /**
      * Undocumented function
      *
      * @return array
@@ -40,7 +40,7 @@ class ExtensionLogic
         if (is_file($jsonFile) && time() - filemtime($jsonFile) <  60 * 60) {
             $data = file_get_contents($jsonFile);
         } else {
-            $data = file_get_contents($this->remoteUrl);
+            $data = $this->getRemoteFile($this->remoteUrl);
             if ($data) {
                 file_put_contents($jsonFile, $data);
             }
@@ -85,7 +85,7 @@ class ExtensionLogic
      */
     public function download($url, $install = 1)
     {
-        $body = file_get_contents($url);
+        $body = $this->getRemoteFile($url);
 
         $file = time() . '_' . mt_rand(100, 999) . '.zip';
 
@@ -260,5 +260,19 @@ class ExtensionLogic
         unset($reflectionClass, $sonDir);
 
         return $extends;
+    }
+
+    public function getRemoteFile($url)
+    {
+        $contextOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ]
+        ];
+
+        $conetnt = file_get_contents($url, false, stream_context_create($contextOptions));
+
+        return $conetnt;
     }
 }
