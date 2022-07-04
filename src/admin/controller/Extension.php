@@ -5,6 +5,7 @@ namespace tpext\manager\admin\controller;
 use tpext\think\App;
 use think\Controller;
 use think\facade\Config;
+use think\facade\Session;
 use tpext\common\ExtLoader;
 use tpext\common\TpextCore;
 use tpext\manager\common\Module;
@@ -99,7 +100,7 @@ class Extension extends Controller
                 $this->error($result);
             }
 
-            session('dbconfig', $data);
+            Session::set('dbconfig', $data);
 
             if ($data['method'] == 1) {
 
@@ -224,7 +225,7 @@ class Extension extends Controller
             $form->raw('tips', '提示')->value('<p>数据库配置信息将保存在<b>`config/database.php`</b>文件中，请确保程序对此文件有可写权限。'
                 . '如果您不想通过此程序修改配置，请手动修改数据库配置文件，<a href="' . $url . '">后点此进入</a>下一步，如果仍然回到此页面，请检查配置。</p>');
 
-            $data = session('dbconfig');
+            $data = Session::get('dbconfig');
 
             if ($data) {
                 $form->fill($data);
@@ -253,7 +254,7 @@ class Extension extends Controller
 
                 return "<h4>提示</h4><p>{$msg}.数据库连接失败，请配置数据库。</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
             }
-            session('dbconfig', null);
+            Session::set('dbconfig', null);
             Module::getInstance()->install();
             $next = url('/admin/extension/prepare', ['step' => 1]);
             return "<h4>(1/4)</h4><p>安装[tpext.manager]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
@@ -921,12 +922,12 @@ class Extension extends Controller
 
         if (trim($validate) !== trim(file_get_contents($checkFile))) {
 
-            $try_validate = session('admin_try_extend_validate');
+            $try_validate = Session::get('admin_try_extend_validate');
             $errors = 0;
 
-            if (session('?admin_try_extend_validate_errors')) {
-                $errors = session('admin_try_extend_validate_errors') > 300 ? 300
-                    : session('admin_try_extend_validate_errors');
+            if (Session::has('?admin_try_extend_validate_errors')) {
+                $errors = Session::get('admin_try_extend_validate_errors') > 300 ? 300
+                    : Session::get('admin_try_extend_validate_errors');
             }
 
             if ($try_validate) {
@@ -939,8 +940,8 @@ class Extension extends Controller
             }
 
             $errors += 1;
-            session('admin_try_extend_validate', time());
-            session('admin_try_extend_validate_errors', $errors);
+            Session::set('admin_try_extend_validate', time());
+            Session::set('admin_try_extend_validate_errors', $errors);
 
             sleep(2);
             $this->error('文件验证失败：验证字符串不匹配');
@@ -1134,7 +1135,7 @@ class Extension extends Controller
 
     protected function checkToken()
     {
-        $token = session('_csrf_token_');
+        $token = Session::get('_csrf_token_');
 
         if (empty($token) || $token != input('__token__')) {
             $this->error('token错误');
