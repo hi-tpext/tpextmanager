@@ -14,7 +14,7 @@ class Module extends baseModule
 
     protected $description = '提供对扩展的管理[安装/卸载/资源刷新/配置]/数据库管理';
 
-    protected $__root__ = __DIR__ . '/../../';
+    protected $root = __DIR__ . '/../../';
 
     protected $modules = [
         'admin' => ['config', 'extension', 'dbtable', 'creator'],
