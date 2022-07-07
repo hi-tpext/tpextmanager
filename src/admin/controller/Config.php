@@ -509,7 +509,7 @@ EOT;
                 if ($afterSymbol) {
                     $field->afterSymbol($afterSymbol);
                 }
-                if (in_array($fieldType, ['radio', 'select', 'checkbox', 'multipleselect'])) {
+                if (in_array($fieldType, ['radio', 'select', 'checkbox', 'multipleselect', 'dualListbox', 'transfer'])) {
 
                     $field->options(isset($type['options']) ? $type['options'] : [0 => '为什么没有选项？', 1 => '？项选有没么什为']);
                 }
@@ -535,7 +535,7 @@ EOT;
                 $field = $form->text($key);
             }
 
-            if (!in_array($fieldType, ['checkbox', 'multipleselect', 'matches']) && is_array($val)) {
+            if (!in_array($fieldType, ['checkbox', 'multipleselect', 'matches', 'dualListbox', 'transfer']) && is_array($val)) {
                 $saved[$key] = json_encode($saved[$key], JSON_UNESCAPED_UNICODE);
             }
 
@@ -578,13 +578,13 @@ EOT;
                 }
 
                 if (!isset($data[$key])) {
-                    if (in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox'])) {
+                    if (in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox', 'transfer'])) {
                         $data[$key] = [];
                     } else {
                         $data[$key] = '';
                     }
                 } else {
-                    if (!in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox']) && is_array($val)) {
+                    if (!in_array($fieldType, ['checkbox', 'multipleselect', 'dualListbox', 'transfer']) && is_array($val)) {
                         $values[$key] = json_decode($data[$key], 1);
                     } else {
                         $values[$key] = $data[$key];
