@@ -4,6 +4,7 @@ namespace tpext\manager\common\logic;
 
 use tpext\think\App;
 use think\facade\Cache;
+use tpext\common\Tool;
 
 class ExtensionLogic
 {
@@ -166,8 +167,9 @@ class ExtensionLogic
                     $zipBackup->open(rtrim($extendPath, DIRECTORY_SEPARATOR) . '_bak' . date('YmdHis') . '.zip', \ZipArchive::CREATE);
                     $this->addExtendsFilesToZip($zipBackup, $extendPath, $extendName);
                     $zipBackup->close();
+                    Tool::deleteDir($extendPath);
                 }
-
+                
                 $res =  $zip->extractTo($dir);
                 $zip->close();
                 return $res;
