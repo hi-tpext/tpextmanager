@@ -130,8 +130,23 @@ class ExtensionLogic
 
                     return false;
                 }
+                $extendName = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $extendName);
+                $numFiles = $zip->numFiles;
+                $basepath = ''; //基础目录信息，设置后可以让多模块共用一个位置
 
-                $dir = App::getRootPath() . 'extend' . DIRECTORY_SEPARATOR;
+                for ($i = 0; $i < $numFiles; $i += 1) {
+                    if (basename($zip->getNameIndex($i)) == 'basepath.txt') {
+                        $basepath = trim($zip->getFromIndex($i));
+                        break;
+                    }
+                }
+
+                if ($basepath) {
+                    $basepath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $basepath);
+                    $basepath = trim($basepath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+                }
+
+                $dir = App::getRootPath() . 'extend' . DIRECTORY_SEPARATOR . $basepath;
 
                 if (!file_exists($dir)) {
                     mkdir($dir, 0775, true);
@@ -140,15 +155,15 @@ class ExtensionLogic
                 $extendPath = $dir . $extendName;
 
                 if ($install == 1 && is_dir($extendPath)) {
-                    trace('扩展目录已存在：/extend/' . $extendName . '，可能是扩展重复，或不同的两个扩展目录冲突');
-                    $this->errors[] = '扩展目录已存在：/extend/' . $extendName . '，可能是扩展重复，或不同的两个扩展目录冲突';
+                    trace('扩展目录已存在：extend' . DIRECTORY_SEPARATOR . $basepath . $extendName . '，可能是扩展重复，或不同的两个扩展目录冲突');
+                    $this->errors[] = '扩展目录已存在：extend' . DIRECTORY_SEPARATOR . $basepath . $extendName . '，可能是扩展重复，或不同的两个扩展目录冲突';
 
                     return false;
                 }
 
                 if ($install == 2 && is_dir($extendPath)) { //更新已存在的扩展，备份
                     $zipBackup = new \ZipArchive();
-                    $zipBackup->open($dir . rtrim($extendName, '/') . '_bak' . date('YmdHis') . '.zip', \ZipArchive::CREATE);
+                    $zipBackup->open(rtrim($extendPath, DIRECTORY_SEPARATOR) . '_bak' . date('YmdHis') . '.zip', \ZipArchive::CREATE);
                     $this->addExtendsFilesToZip($zipBackup, $extendPath, $extendName);
                     $zipBackup->close();
                 }
@@ -173,9 +188,10 @@ class ExtensionLogic
      *
      * @param \ZipArchive $zipHandler
      * @param string $path
+     * @param string $subPath
      * @return void
      */
-    protected function addExtendsFilesToZip($zipHandler, $path, $sub_dir = '')
+    protected function addExtendsFilesToZip($zipHandler, $path, $subPath = '')
     {
         if (!is_dir($path)) {
             return [];
@@ -192,10 +208,10 @@ class ExtensionLogic
                 $sonDir = $path . DIRECTORY_SEPARATOR . $file;
 
                 if (is_dir($sonDir)) {
-                    $this->addExtendsFilesToZip($zipHandler, $sonDir, $sub_dir . $file . '/');
+                    $this->addExtendsFilesToZip($zipHandler, $sonDir, $subPath . $file . '/');
                 } else {
 
-                    $zipHandler->addFile($sonDir, $sub_dir . $file);  //向压缩包中添加文件
+                    $zipHandler->addFile($sonDir, $subPath . $file);  //向压缩包中添加文件
                 }
             }
         }
