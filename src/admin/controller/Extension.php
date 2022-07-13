@@ -925,7 +925,7 @@ class Extension extends Controller
             $try_validate = Session::get('admin_try_extend_validate');
             $errors = 0;
 
-            if (Session::has('?admin_try_extend_validate_errors')) {
+            if (Session::has('admin_try_extend_validate_errors')) {
                 $errors = Session::get('admin_try_extend_validate_errors') > 300 ? 300
                     : Session::get('admin_try_extend_validate_errors');
             }
