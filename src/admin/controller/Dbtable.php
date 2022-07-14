@@ -17,8 +17,6 @@ class Dbtable extends Controller
     use HasBase;
     use HasIndex;
 
-    protected $database = '';
-
     /**
      * Undocumented variable
      *
@@ -37,8 +35,6 @@ class Dbtable extends Controller
         }
 
         $this->pk = 'TABLE_NAME';
-
-        $this->database = config('database.database');
 
         $this->dbLogic = new DbLogic;
 
