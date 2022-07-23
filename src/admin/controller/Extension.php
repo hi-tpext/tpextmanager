@@ -667,6 +667,10 @@ class Extension extends Controller
 
     public function upgrade()
     {
+        if (input('from_update') == 1 && ExtLoader::isWebman()) { //webman,下载更新以后跳转升级页面，需要重启一下
+            ExtLoader::reloadWebman('下载新了插件版本，重启');
+        }
+
         $key = input('key');
 
         if (empty($key)) {
@@ -806,7 +810,7 @@ class Extension extends Controller
             $findKey = str_replace('\\', '-', $findKey);
 
             if ($findInstall) {
-                $upgradeUrl = url('upgrade', ['key' => $findKey])->__toString();
+                $upgradeUrl = url('upgrade', ['key' => $findKey, 'from_update' => 1])->__toString();
 
                 $builder->content()->display('<h5>下载最新压缩包成功，您需要安装才能体验最新功能，<a class="btn btn-xs btn-success" href="{$url|raw}">点此去升级</a></h5><script>parent.$(".search-refresh").trigger("click");</script>', ['url' => $upgradeUrl]);
             } else {
