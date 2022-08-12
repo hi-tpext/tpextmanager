@@ -5,7 +5,6 @@ namespace tpext\manager\admin\controller;
 use think\Loader;
 use tpext\think\App;
 use think\Controller;
-use think\facade\Validate;
 use tpext\manager\common\Module;
 use tpext\builder\common\Wrapper;
 use tpext\manager\common\logic\DbLogic;
@@ -566,7 +565,7 @@ class ShopGoodsExtend extends Model
                 $pdata['local_table_name'] = $id;
                 $dataModel = new TableRelation;
 
-                $result = Validate::check($pdata, [
+                $result = $this->validate($pdata, [
                     'field_name|字段' => 'require',
                     'relation_type|关联类型' => 'require',
                     'foreign_table_name|关联表' => 'require',
