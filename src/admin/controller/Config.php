@@ -557,11 +557,7 @@ EOT;
         unset($data['__token__']);
 
         if (isset($default['__config__'])) {
-            $fieldTypes = $default['__config__'] ?? [];
-        }
-
-        if (isset($default['__config__'])) {
-            $fieldTypes = $default['__config__'] ?? [];
+            $fieldTypes = $default['__config__'] ?: [];
         }
 
         if (is_array($fieldTypes)) { // __config__ 是数组的情况
