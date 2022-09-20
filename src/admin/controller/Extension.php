@@ -130,9 +130,9 @@ class Extension extends Controller
                 $config = [];
 
                 if (ExtLoader::isWebman()) {
-                    $config = array_merge(WConfig::get('thinkorm'), $data);
+                    $config = array_merge(WConfig::get('thinkorm.connections.mysql', []), $data);
                 } else {
-                    $config = array_merge(Config::get('database'), $data);
+                    $config = array_merge(Config::get('database.connections.mysql', []), $data);
                 }
 
                 try {
@@ -169,9 +169,9 @@ class Extension extends Controller
                 $config = [];
 
                 if (ExtLoader::isWebman()) {
-                    $config = array_merge(WConfig::get('thinkorm'), $data);
+                    $config = array_merge(WConfig::get('thinkorm.connections.mysql', []), $data);
                 } else {
-                    $config = array_merge(Config::get('database'), $data);
+                    $config = array_merge(Config::get('database.connections.mysql', []), $data);
                 }
 
                 try {
