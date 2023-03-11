@@ -48,7 +48,6 @@ class Creator extends Controller
     protected function initialize()
     {
         $this->pageTitle = '构建器';
-        $this->database = config('database.database');
         $this->pk = 'TABLE_NAME';
 
         $this->creatorLogic = new CreatorLogic;
@@ -224,7 +223,7 @@ class Creator extends Controller
             $field['FIELD_RELATION'] = '';
             $field['ATTR'] = [];
 
-            $relation = $this->relationModel->where(['local_table_name' => $data['TABLE_NAME'], 'foreign_key' => $field['COLUMN_NAME']])->find();
+            $relation = $this->relationModel->where(['local_table_name' => $data['TABLE_NAME'], 'foreign_key' => $field['COLUMN_NAME']])->where('relation_type', 'in', ['belongs_to', 'has_one'])->find();
 
             if ($relation) {
                 $field['FIELD_RELATION'] = '/admin/' . strtolower(Str::studly($relation['relation_name'])) . '/selectpage';
@@ -404,6 +403,7 @@ class Creator extends Controller
         $table->raw('TABLE_RELATIONS', '表关联');
 
         $table->getToolbar()
+            ->btnLink(url('scanModels'), '模型关联扫描', 'btn-warning', 'mdi-search-web', 'title="查找模型中手动定义的关联并存入数据库"')
             ->btnRefresh()
             ->btnToggleSearch();
 
@@ -423,6 +423,20 @@ class Creator extends Controller
 
             $d['TABLE_RELATIONS'] = count($names) ? implode('、', $names) : '<label class="label label-default">暂无表关联</label>';
         }
+    }
+
+    public function scanModels()
+    {
+        $modelNamespace = '';
+        if (Module::getInstance()->config('model_namespace') == 'common') {
+            $modelNamespace = 'app\\common\\model';
+        } else {
+            $modelNamespace = 'app\\admin\\model';
+        }
+        $logic = new CreatorLogic;
+        $logic->scanModelsForNamespace($modelNamespace);
+
+        return $this->builder()->layer()->closeRefresh(1, '已扫描');
     }
 
     /**
@@ -493,7 +507,7 @@ class Creator extends Controller
 
             $form->items('relations', '关联')->dataWithId($relations)->size(12, 12)->with(
                 $form->select('field_name', '字段')->required()->optionsData($fields, 'COLUMN_NAME', 'COLUMN_NAME'),
-                $form->select('relation_type', '关联类型')->required()->options(['belongs_to' => 'belongsTo', 'has_one' => 'hasOne'])->default('belongs_to'),
+                $form->select('relation_type', '关联类型')->required()->options(['belongs_to' => 'belongsTo', 'has_one' => 'hasOne', 'has_many' => 'hasMany'])->default('belongs_to'),
                 $form->select('foreign_table_name', '关联表')->required()->optionsData($tables, 'TABLE_NAME', 'TABLE_NAME')->withNext(
                     $form->select('relation_key', '关联字段')->required()->dataUrl(url('slecltfields'), 'COLUMN_NAME', 'COLUMN_NAME')
                 ),
@@ -596,7 +610,7 @@ class ShopGoodsExtend extends Model
                 }
 
                 if (empty($pdata['relation_name'])) {
-                    $pdata['relation_name'] = Str::camel(preg_replace('/^' . $this->prefix . '/', '', $pdata['foreign_table_name']));
+                    $pdata['relation_name'] = Str::camel(preg_replace('/^' . $this->prefix . '/', '', $pdata['foreign_table_name']) . ($pdata['relation_type'] == 'has_many' ? 's' : ''));
                 }
 
                 if ($is_add) {
@@ -662,7 +676,7 @@ class ShopGoodsExtend extends Model
     /**
      * Undocumented function
      * @title 下拉选择字段
-     * @return void
+     * @return mixed
      */
     public function slecltfields()
     {

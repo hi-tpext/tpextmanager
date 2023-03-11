@@ -352,6 +352,8 @@ class DbLogic
                 $sqls[] = $sql;
                 Db::execute($sql);
             }
+
+            return true;
         } catch (\Exception $ex) {
 
             foreach ($sqls as $s) {

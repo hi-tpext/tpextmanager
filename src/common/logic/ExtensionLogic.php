@@ -196,7 +196,7 @@ class ExtensionLogic
     protected function addExtendsFilesToZip($zipHandler, $path, $subPath = '')
     {
         if (!is_dir($path)) {
-            return [];
+            return;
         }
 
         $dir = opendir($path);

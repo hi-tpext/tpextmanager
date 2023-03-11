@@ -80,7 +80,7 @@ class Config extends Controller
                 $this->error('修改失败，或无变化');
             }
         } else {
-            $tab = $builder->tab();
+            $tab = $builder->tab()->vertical();
             $extensionsKeys = [];
             $theConfig = null;
 
