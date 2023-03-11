@@ -933,7 +933,7 @@ class CreatorLogic
                         $modelClass = 'app\\' . $mtches[1] . $mtches[2];
 
                         if (class_exists($modelClass)) {
-                            $this->scanModelRelations($sonDir, $modelClass);
+                            $this->scanModelRelations(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $sonDir), $modelClass);
                         }
                     }
                 }
