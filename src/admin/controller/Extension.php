@@ -271,6 +271,7 @@ class Extension extends Controller
             $next = url('/admin/extension/prepare', ['step' => 4]);
             return "<h4>(4/4)</h4><p>安装[builder.mdeditor]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
         } else {
+            ExtLoader::trigger('tpext_extension_prepare_done'); //如果扩展要在首次安装时静默安装，可监听此事件
             $next = url('/admin/extension/index');
             return "<h4>(预安装完成)</h4><p>即将跳转[扩展管理]页面，继续安装其他扩展！</p><script>setTimeout(function(){location.href='{$next}'},1500);</script>";
         }
@@ -920,30 +921,27 @@ class Extension extends Controller
             $this->error('[extend/validate.txt]文件不存在');
         }
 
+        $try_validate = Session::get('admin_try_extend_validate');
+        $errors = 0;
+
+        if (Session::has('admin_try_extend_validate_errors')) {
+            $errors = Session::get('admin_try_extend_validate_errors') > 300 ? 300
+                : Session::get('admin_try_extend_validate_errors');
+        }
+
+        if ($errors > 0 && $try_validate) {
+
+            $time_gone = time() - $try_validate;
+
+            if ($time_gone < $errors) {
+                $this->error('错误次数过多，请' . ($errors - $time_gone) . '秒后再试');
+            }
+        }
+
         if (trim($validate) !== trim(file_get_contents($checkFile))) {
-
-            $try_validate = Session::get('admin_try_extend_validate');
-            $errors = 0;
-
-            if (Session::has('admin_try_extend_validate_errors')) {
-                $errors = Session::get('admin_try_extend_validate_errors') > 300 ? 300
-                    : Session::get('admin_try_extend_validate_errors');
-            }
-
-            if ($try_validate) {
-
-                $time_gone = time() - $try_validate;
-
-                if ($time_gone < $errors) {
-                    $this->error('错误次数过多，请' . ($errors - $time_gone) . '秒后再试');
-                }
-            }
-
             $errors += 1;
             Session::set('admin_try_extend_validate', time());
             Session::set('admin_try_extend_validate_errors', $errors);
-
-            sleep(2);
             $this->error('文件验证失败：验证字符串不匹配');
         }
 

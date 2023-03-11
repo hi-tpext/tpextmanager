@@ -3,6 +3,9 @@
 namespace tpext\manager\common\logic;
 
 use think\Loader;
+use tpext\think\App;
+use think\Model;
+use tpext\manager\common\model\TableRelation;
 
 class CreatorLogic
 {
@@ -180,7 +183,7 @@ class CreatorLogic
         }
 
         $this->lines[] = '';
-        $this->lines[] = "        Lang::load(App::getRootPath() . implode(DIRECTORY_SEPARATOR, ['application', 'admin', 'lang', App::getDefaultLang(), '" . strtolower($modelName) . "' . '.php']));";
+        $this->lines[] = "        Lang::load(App::getAppPath() . implode(DIRECTORY_SEPARATOR, ['admin', 'lang', App::getDefaultLang(), '" . strtolower($modelName) . "' . '.php']));";
         $this->lines[] = '    }';
     }
 
@@ -570,7 +573,7 @@ class CreatorLogic
             foreach ($data['FORM_FIELDS'] as $field) {
 
                 if (isset($field['ATTR']) && in_array('required', $field['ATTR'])) {
-                    $this->lines[] = "            '{$field['COLUMN_NAME']}|{$field['COLUMN_COMMENT']}' => 'require',";
+                    $this->lines[] = "            '{$field['COLUMN_NAME']}|' . Lang::get('{$field['COLUMN_NAME']}') => 'require',";
                 }
             }
 
@@ -728,9 +731,13 @@ class CreatorLogic
             $lines[] = '    {';
             if ($rl['relation_type'] == 'belongs_to') {
                 $lines[] = "        return \$this->belongsTo({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
-            } else { //has_one
+            } else if ($rl['relation_type'] == 'has_one') { //
                 $lines[] = "        return \$this->hasOne({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
+            } else //has_many
+            {
+                $lines[] = "        return \$this->hasMany({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
             }
+
             $lines[] = '    }';
         }
 
@@ -840,8 +847,11 @@ class CreatorLogic
                     $lines[] = '    {';
                     if ($rl['relation_type'] == 'belongs_to') {
                         $lines[] = "        return \$this->belongsTo({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
-                    } else { //has_one
+                    } else if ($rl['relation_type'] == 'has_one') { //
                         $lines[] = "        return \$this->hasOne({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
+                    } else //has_many
+                    {
+                        $lines[] = "        return \$this->hasMany({$foreignModelname}::class, '{$rl['foreign_key']}', '{$rl['local_key']}');";
                     }
                     $lines[] = '    }';
                 }
@@ -855,6 +865,166 @@ class CreatorLogic
         }
 
         return $lines;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $modelNamespace
+     * @return void
+     */
+    public function scanModelsForNamespace($modelNamespace)
+    {
+        $appPath = App::getRootPath() . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $modelNamespace == 'app\\admin\\model' ? 'application/admin/model' : 'application/common/model');
+        $this->scanModels($appPath);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $path
+     * @param array $models
+     * @return void
+     */
+    public function scanModels($path)
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+        $dir = opendir($path);
+
+        $sonDir = null;
+
+        while (false !== ($file = readdir($dir))) {
+
+            if (($file != '.') && ($file != '..')) {
+
+                $sonDir = $path . DIRECTORY_SEPARATOR . $file;
+
+                if (is_dir($sonDir)) {
+                    $this->scanModels($sonDir);
+                } else {
+                    $sonDir = str_replace('/', '\\', $sonDir);
+
+                    if (preg_match('/.+?\\\application\\\(admin|common)(\\\model\\\.+?)\.php$/i', $sonDir, $mtches)) {
+                        $modelClass = 'app\\' . $mtches[1] . $mtches[2];
+
+                        if (class_exists($modelClass)) {
+                            $this->scanModelRelations($sonDir, $modelClass);
+                        }
+                    }
+                }
+            }
+        }
+
+        closedir($dir);
+
+        unset($sonDir);
+    }
+
+    /**
+     * Undocumented function
+     * 
+     * @param string $modelFileName
+     * @param string $modelClass
+     * @return void
+     */
+    public function scanModelRelations($modelFileName, $modelClass)
+    {
+        $fileHandle = fopen($modelFileName, "r");
+
+        $thisModel = new $modelClass;
+        $relationModel = null;
+
+        $function = '';
+        $relationType = '';
+        $relationClass = '';
+        $foreignKey = '';
+        $localKey = '';
+
+        $thisTable = '';
+        $relationTable = '';
+
+        while (!feof($fileHandle)) {
+            $line = fgets($fileHandle);
+
+            if (preg_match('/public\s+function\s+(\w+)\s*\(\)/i', $line, $mch)) {
+                $function  = $mch[1];
+            }
+
+            //return $this->belongsTo(Member::class, 'member_id', 'id');
+            if (preg_match('/\$this\s*->\s*(belongsTo|hasOne|hasMany)\s*\(([^,]+?)(,[^,]+?)?(,[^,]+?)?\)/i', $line, $mch)) {
+
+                $relationType  = $mch[1];
+                $relationClass  = str_replace('::class', '', $mch[2]);
+                $foreignKey = preg_replace('/\W/', '', $mch[3] ?? '');
+                $localKey = preg_replace('/\W/', '', $mch[4] ?? '');
+
+                $relationModel = $this->parseModel($modelClass, $relationClass);
+
+                if ($relationModel && $relationModel instanceof Model) {
+                    if ($relationType == 'belongsTo') {
+                        $foreignKey = $foreignKey ?: $this->getForeignKey($relationModel->getName());
+                        $localKey   = $localKey ?: $relationModel->getPk();
+                    } else {
+                        $localKey   = $localKey ?: $thisModel->getPk();
+                        $foreignKey = $foreignKey ?: $this->getForeignKey($thisModel->getName());
+                    }
+
+                    $thisTable = $thisModel->db()->getTable();
+                    $relationTable = $relationModel->db()->getTable();
+
+                    $exist = TableRelation::where(['local_table_name' => $thisTable, 'foreign_table_name' => $relationTable, 'local_key' => $localKey, 'foreign_key' => $foreignKey])->find();
+
+                    if (!$exist) {
+                        $exist = new TableRelation;
+
+                        $exist->save([
+                            'relation_type' => $relationType == 'belongsTo' ? 'belongs_to' : ($relationType == 'hasOne' ? 'has_one' : 'has_many'),
+                            'relation_name' => $function,
+                            'local_table_name' => $thisTable,
+                            'foreign_table_name' => $relationTable,
+                            'local_key' => $localKey,
+                            'foreign_key' => $foreignKey
+                        ]);
+                    }
+                }
+            }
+        }
+
+        fclose($fileHandle);
+    }
+
+    protected function getForeignKey($name)
+    {
+        if (strpos($name, '\\')) {
+            $name = class_basename($name);
+        }
+
+        return Loader::parseName($name) . '_id';
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $thisClass
+     * @param string $relationClass
+     * @return mixed|null
+     */
+    protected function parseModel($thisClass, $relationClass)
+    {
+        if (false === strpos($relationClass, '\\')) {
+            $path = explode('\\', $thisClass);
+            array_pop($path);
+            array_push($path, Loader::parseName($relationClass, 1));
+            $relationClass = implode('\\', $path);
+        }
+
+        if (class_exists($relationClass)) {
+            return new $relationClass;
+        }
+
+        return null;
     }
 
     /**

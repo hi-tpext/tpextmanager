@@ -2,11 +2,13 @@
 
 namespace tpext\manager\admin\controller;
 
-use think\Controller;
 use think\Db;
+use tpext\think\App;
+use think\Controller;
+use think\facade\Session;
+use tpext\manager\common\logic\DbLogic;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
-use tpext\manager\common\logic\DbLogic;
 
 /**
  * Undocumented class
@@ -43,6 +45,12 @@ class Dbtable extends Controller
         $this->sortOrder = 'TABLE_NAME ASC';
 
         $this->pagesize = 9999; //不产生分页
+
+        $action = request()->action(true);
+
+        if (empty(Session::get('admin_try_db_manage_ok')) && $action !== 'managevalidate') {
+            $this->error('请先完成安全验证', url('managevalidate'), '', 1);
+        }
     }
 
     protected function filterWhere()
@@ -87,6 +95,72 @@ class Dbtable extends Controller
         $total = count($data);
 
         return $data;
+    }
+
+    public function managevalidate()
+    {
+        $builder = $this->builder();
+
+        $checkFile = App::getRootPath() . 'extend' . DIRECTORY_SEPARATOR . 'validate.txt';
+
+        if (request()->isGet()) {
+            if (!file_exists($checkFile)) {
+                file_put_contents($checkFile, $this->randstr());
+            }
+
+            $form = $builder->form();
+            $form->password('validate', '验证字符')->required()->help(!file_exists($checkFile) ? '请在网站目录新建[extend/validate.txt]文件，里面填入任意字符串，然后再此输入。' : '输入网站目录下[extend/validate.txt]文件中的字符串内容');
+
+            return $builder->render();
+        }
+
+        $validate = input('validate');
+
+        if (!file_exists($checkFile)) {
+            $this->error('[extend/validate.txt]文件不存在');
+        }
+
+        $try_validate = Session::get('admin_try_db_manage_validate');
+        $errors = 0;
+
+        if (Session::has('admin_try_db_manage_validate_errors')) {
+            $errors = Session::get('admin_try_db_manage_validate_errors') > 300 ? 300
+                : Session::get('admin_try_db_manage_validate_errors');
+        }
+
+        if ($errors > 0 && $try_validate) {
+
+            $time_gone = time() - $try_validate;
+
+            if ($time_gone < $errors) {
+                $this->error('错误次数过多，请' . ($errors - $time_gone) . '秒后再试');
+            }
+        }
+
+        if (trim($validate) !== trim(file_get_contents($checkFile))) {
+            $errors += 1;
+            Session::set('admin_try_db_manage_validate', time());
+            Session::set('admin_try_db_manage_validate_errors', $errors);
+            $this->error('文件验证失败：验证字符串不匹配');
+        }
+
+        Session::set('admin_try_db_manage_ok', time());
+
+        $this->success('已完成验证', url('index'), '', 1);
+    }
+
+    private function randstr($randLength = 16)
+    {
+        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHJKLMNPQEST123456789';
+
+        $len = strlen($chars);
+        $randStr = '';
+
+        for ($i = 0; $i < $randLength; $i++) {
+            $randStr .= $chars[rand(0, $len - 1)];
+        }
+
+        return $randStr;
     }
 
     public function add()

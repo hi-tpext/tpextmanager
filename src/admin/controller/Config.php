@@ -58,7 +58,7 @@ class Config extends Controller
 
             $theConfig = $this->dataModel->where('key', $config_key)->find();
             if (!$theConfig) {
-                $this->success('不存在，重新加载配置...', url('index'));
+                $this->success('key：' . $config_key . '不存在，重新加载配置...', url('index'));
             }
 
             $filePath = $rootPath . str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $theConfig['file']);
@@ -80,7 +80,7 @@ class Config extends Controller
                 $this->error('修改失败，或无变化');
             }
         } else {
-            $tab = $builder->tab();
+            $tab = $builder->tab()->vertical();
             $extensionsKeys = [];
             $theConfig = null;
 
@@ -108,6 +108,8 @@ class Config extends Controller
                 $theConfig = $this->dataModel->where(['key' => $config_key])->find();
 
                 if (!$theConfig) {
+                    unset($default['__config__'], $default['__saving__']);
+
                     $this->dataModel->create(
                         [
                             'key' => $config_key,
@@ -194,6 +196,8 @@ class Config extends Controller
             }
 
             $config = include $filePath;
+
+            unset($config['__config__'], $config['__saving__']); //
 
             $res = $this->dataModel->create(
                 [
@@ -309,6 +313,8 @@ EOT;
             $form = $builder->form();
             if (!$theConfig) {
                 if ($instance) {
+                    unset($default['__config__'], $default['__saving__']);
+
                     $this->dataModel->create(
                         [
                             'key' => $instance->getId(),
