@@ -5,6 +5,7 @@ namespace tpext\manager\admin\controller;
 use think\Loader;
 use tpext\think\App;
 use think\Controller;
+use tpext\common\ExtLoader;
 use tpext\manager\common\Module;
 use tpext\builder\common\Wrapper;
 use tpext\manager\common\logic\DbLogic;
@@ -104,12 +105,33 @@ class Creator extends Controller
         return $data;
     }
 
+    protected function getProtectedTables()
+    {
+        ExtLoader::clearCache();
+        $extensions = ExtLoader::getExtensions();
+        $protectedTables = [];
+        foreach ($extensions as $key => $instance) {
+            $protectedTables = array_merge($protectedTables, $instance->getProtectedTables());
+        }
+        array_walk($protectedTables, function (&$value, $key) {
+            $value = preg_replace('/__PREFIX__/is', $this->prefix, $value);
+        });
+
+        return $protectedTables;
+    }
+
     public function edit()
     {
         $id = input('id');
 
+        $builder = $this->builder($this->pageTitle, $this->editText);
+
+        $protectedTables = $this->getProtectedTables();
+        if (in_array($id, $protectedTables)) {
+            return $builder->layer()->close(0, '此表不能允许生成代码');
+        }
+
         if (request()->isGet()) {
-            $builder = $this->builder($this->pageTitle, $this->editText);
             $data = $this->dbLogic->getTableInfo($id);
             if (!$data) {
                 return $builder->layer()->close(0, '数据不存在');
@@ -448,6 +470,10 @@ class Creator extends Controller
         $id = input('id');
 
         $builder = $this->builder($this->pageTitle, '表关联');
+        $protectedTables = $this->getProtectedTables();
+        if (in_array($id, $protectedTables)) {
+            return $builder->layer()->close(0, '此表不能允许此操作');
+        }
 
         $tableInfo = $this->dbLogic->getTableInfo($id);
 
@@ -711,6 +737,10 @@ class ShopGoodsExtend extends Model
         $id = input('id');
 
         $builder = $this->builder($this->pageTitle, '翻译生成');
+        $protectedTables = $this->getProtectedTables();
+        if (in_array($id, $protectedTables)) {
+            return $builder->layer()->close(0, '此表不能允许生成代码');
+        }
         $fields = $this->dbLogic->getFields($id, 'COLUMN_NAME,COLUMN_TYPE,COLUMN_COMMENT');
 
         $tableInfo = $this->dbLogic->getTableInfo($id);
