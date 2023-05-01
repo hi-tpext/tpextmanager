@@ -6,6 +6,7 @@ use think\facade\Db;
 use tpext\think\App;
 use think\Controller;
 use think\facade\Session;
+use tpext\common\ExtLoader;
 use tpext\manager\common\logic\DbLogic;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
@@ -90,11 +91,26 @@ class Dbtable extends Controller
      */
     protected function buildDataList($where = [], $sortOrder = '', $page = 1, &$total = -1)
     {
-        $data = $this->dbLogic->getTables('TABLE_NAME,TABLE_ROWS,CREATE_TIME,TABLE_COLLATION,TABLE_COMMENT,ENGINE,AUTO_INCREMENT,AVG_ROW_LENGTH,INDEX_LENGTH', $where, $sortOrder);
+        $data = $this->dbLogic->getTables('TABLE_NAME,TABLE_ROWS,CREATE_TIME,TABLE_COLLATION,TABLE_COMMENT,ENGINE,AUTO_INCREMENT,AVG_ROW_LENGTH,INDEX_LENGTH', '', $sortOrder);
 
         $total = count($data);
 
         return $data;
+    }
+
+    protected function getProtectedTables()
+    {
+        ExtLoader::clearCache();
+        $extensions = ExtLoader::getExtensions();
+        $protectedTables = [];
+        foreach ($extensions as $key => $instance) {
+            $protectedTables = array_merge($protectedTables, $instance->getProtectedTables());
+        }
+        array_walk($protectedTables, function (&$value, $key) {
+            $value = preg_replace('/__PREFIX__/is', $this->prefix, $value);
+        });
+
+        return $protectedTables;
     }
 
     public function managevalidate()
@@ -246,6 +262,10 @@ class Dbtable extends Controller
             $form->tab('建表语句');
             $tableInfo = Db::query("SHOW CREATE TABLE `{$data['TABLE_NAME']}`");
             $form->raw('sql', ' ')->value(!empty($tableInfo) ? '<pre>' . $tableInfo[0]['Create Table'] . ';</pre>' : '-')->size(0, 12);
+            $protectedTables = $this->getProtectedTables();
+            if (in_array($data['TABLE_NAME'], $protectedTables)) {
+                $form->readonly();
+            }
         } else {
             $pkdata = [
                 ['id' => 'pk', 'COLUMN_NAME' => 'id', 'COLUMN_COMMENT' => '主键', 'DATA_TYPE' => 'int', 'LENGTH' => 10, 'ATTR' => 'auto_inc,unsigned', '__can_delete__' => 0],
@@ -327,9 +347,9 @@ class Dbtable extends Controller
      */
     protected function buildTable(&$data = [])
     {
+        $protectedTables = $this->getProtectedTables();
         $table = $this->table;
-
-        $table->text('TABLE_NAME', '表名')->autoPost('', true)->getWrapper()->addStyle('width:260px');
+        $table->text('TABLE_NAME', '表名')->mapClass($protectedTables, 'disabled')->autoPost('', true)->getWrapper()->addStyle('width:260px');
         $table->text('TABLE_COMMENT', '表注释')->autoPost('', true)->getWrapper()->addStyle('width:260px');
         $table->raw('TABLE_ROWS', '记录条数');
         $table->show('AUTO_INCREMENT', '自增id');
@@ -536,9 +556,12 @@ class Dbtable extends Controller
         if (empty($ids)) {
             $this->error('参数有误');
         }
-
+        $protectedTables = $this->getProtectedTables();
         $res = 0;
         foreach ($ids as $id) {
+            if (in_array($id, $protectedTables)) {
+                $this->error('此表不允许删除');
+            }
             if ($this->dbLogic->trashTable($id)) {
                 $res += 1;
             }
@@ -639,6 +662,11 @@ class Dbtable extends Controller
                     $field->options($options);
                 })->getWrapper()->addStyle('width:180px;')
             );
+
+        $protectedTables = $this->getProtectedTables();
+        if (in_array($name, $protectedTables)) {
+            $form->readonly();
+        }
 
         return $builder->render();
     }
