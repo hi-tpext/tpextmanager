@@ -49,6 +49,16 @@ class DbLogic
         return $this->errors;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @return string
+     */
+    public function getPrefix()
+    {
+        return config('database.prefix');
+    }
+
     public function getErrorsText()
     {
         return implode('<br>', $this->errors);

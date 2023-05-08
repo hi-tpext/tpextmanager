@@ -38,20 +38,10 @@ class Dbtable extends Controller
         }
 
         $this->pk = 'TABLE_NAME';
-
         $this->dbLogic = new DbLogic;
-
-        $this->prefix = config('database.prefix');
-
+        $this->prefix = $this->dbLogic->getPrefix();
         $this->sortOrder = 'TABLE_NAME ASC';
-
         $this->pagesize = 9999; //不产生分页
-
-        $action = request()->action(true);
-
-        if (empty(Session::get('admin_try_db_manage_ok')) && $action !== 'managevalidate') {
-            $this->error('请先完成安全验证', url('managevalidate'), '', 1);
-        }
     }
 
     protected function filterWhere()
@@ -390,10 +380,12 @@ class Dbtable extends Controller
      */
     public function trash()
     {
-        $builder = $this->builder('回收站', '');
+        if (empty(Session::get('admin_try_db_manage_ok'))) {
+            $this->error('请先完成安全验证', url('managevalidate'), '', 1);
+        }
 
+        $builder = $this->builder($this->pageTitle, '回收站');
         $table = $builder->table();
-
         $table->match('type', '类型')->options(['table' => '表', 'field' => '字段'])->mapClassGroup([['table', 'success'], ['field', 'info']]);
         $table->raw('name', '名称');
         $table->show('comment', '注释');
@@ -495,6 +487,10 @@ class Dbtable extends Controller
      */
     public function destroy()
     {
+        if (empty(Session::get('admin_try_db_manage_ok'))) {
+            $this->error('请先完成安全验证', url('managevalidate'), '', 1);
+        }
+
         $ids = input('post.ids', '');
         $ids = array_filter(explode(',', $ids), 'strlen');
 
