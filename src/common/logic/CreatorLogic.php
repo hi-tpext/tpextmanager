@@ -497,8 +497,8 @@ class CreatorLogic
         $this->lines[] = '';
         $this->lines[] = '    /**';
         $this->lines[] = '     * 构建表单';
-        $this->lines[] = '     * @param boolean $isEdit';
-        $this->lines[] = '     * @param array $data';
+        $this->lines[] = '     * @param int|boolean $isEdit';
+        $this->lines[] = '     * @param array|\think\Model $data';
         $this->lines[] = '     * @return mixed';
         $this->lines[] = '     */';
         $this->lines[] = '    protected function buildForm($isEdit, &$data = [])';
