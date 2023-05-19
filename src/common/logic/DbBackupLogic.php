@@ -6,6 +6,8 @@ use think\facade\Db;
 use tpext\think\App;
 use tpext\common\Tool;
 use think\facade\Config;
+use tpext\common\ExtLoader;
+use Webman\Config as WConfig;
 
 class DbBackupLogic
 {
@@ -17,7 +19,11 @@ class DbBackupLogic
 
     public function __construct()
     {
-        $this->dbConfig = Config::get('database.connections.' . Config::get('database.default'), []);
+        if (ExtLoader::isWebman()) {
+            $this->dbConfig = WConfig::get('thinkorm.connections.' . WConfig::get('thinkorm.default'), []);
+        } else {
+            $this->dbConfig = Config::get('database.connections.' . Config::get('database.default'), []);
+        }
     }
 
     /**
