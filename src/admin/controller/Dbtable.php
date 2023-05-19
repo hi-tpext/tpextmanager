@@ -485,7 +485,7 @@ class Dbtable extends Controller
             }
         }
 
-        return $builder;
+        return $builder->render();
     }
 
     /**
