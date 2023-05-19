@@ -473,7 +473,7 @@ class Dbtable extends Controller
         if ($tab_index >= count($ids) - 1) {
             $save_path = rtrim($save_path, DIRECTORY_SEPARATOR);
             $logic->compressDir(preg_replace('/^(.+?dbbackup)\d+$/i', '', $save_path), $save_path . '.zip');
-            $builder->display('表：{$table}已备份完成，共{$total}数据。<br>所有数据库已备份。<br>文本保存在：{$filename}', ['table' => $table, 'total' => $res[1], 'filename' => 'runtime' . DIRECTORY_SEPARATOR . $save_path . '.zip']);
+            $builder->display('表：{$table}已备份完成，共{$total}数据。<br>所有数据库已备份。<br>文件保存在：{$filename}', ['table' => $table, 'total' => $res[1], 'filename' => 'runtime' . DIRECTORY_SEPARATOR . $save_path . '.zip']);
         } else {
             if ($res[2]) {
                 $tab_index += 1;
