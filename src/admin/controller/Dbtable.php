@@ -8,6 +8,7 @@ use think\Controller;
 use think\facade\Session;
 use tpext\common\ExtLoader;
 use tpext\manager\common\logic\DbLogic;
+use tpext\manager\common\logic\DbBackupLogic;
 use tpext\builder\traits\actions\HasBase;
 use tpext\builder\traits\actions\HasIndex;
 
@@ -359,7 +360,8 @@ class Dbtable extends Controller
             ->btnAdd('', '', 'btn-primary', 'mdi-plus', 'data-layer-size="1200px,98%"')
             ->btnRefresh()
             ->btnToggleSearch()
-            ->btnLink(url('trash'), '回收站', 'btn-danger', 'mdi-delete-variant');
+            ->btnLink(url('trash'), '回收站', 'btn-danger', 'mdi-delete-variant')
+            ->btnOpenChecked(url('backup'), '备份', 'btn-info', 'mdi-backup-restore', 'data-layer-size="600px;350px;"');
 
         $table->getActionbar()
             ->btnEdit()
@@ -368,7 +370,6 @@ class Dbtable extends Controller
             ->btnLink('lang', url('/admin/creator/lang', ['id' => '__data.pk__']), '', 'btn-danger', 'mdi-translate', 'title="生成翻译文件"')
             ->btnDelete();
 
-        $table->useCheckbox(false);
         $table->sortable('TABLE_NAME,TABLE_ROWS,CREATE_TIME,TABLE_COLLATION,AUTO_INCREMENT,AVG_ROW_LENGTH,INDEX_LENGTH');
     }
 
@@ -442,6 +443,49 @@ class Dbtable extends Controller
         }
 
         return $builder->render();
+    }
+
+    /**
+     * Undocumented function
+     * @title 批量备份数据库
+     *
+     * @return mixed
+     */
+    public function backup()
+    {
+        $ids = input('get.ids', '');
+        $ids = array_filter(explode(',', $ids), 'strlen');
+        if (empty($ids)) {
+            $this->error('参数有误');
+        }
+        $tab_index = input('get.tab_index', 0);
+        $save_path = input('get.save_path', '');
+        if (empty($save_path)) {
+            $save_path = 'dbbackup' . DIRECTORY_SEPARATOR . date('ymdHi') . DIRECTORY_SEPARATOR;
+        }
+        $filename = input('get.filename', '');
+        $start = input('get.start', 0);
+        $table = $ids[$tab_index];
+        $builder = $this->builder();
+        $logic = new DbBackupLogic;
+        $res = $logic->backupTable($table, $save_path, $filename, $start);
+        $filename = $logic->getFilename();
+        if ($tab_index >= count($ids) - 1) {
+            $save_path = rtrim($save_path, DIRECTORY_SEPARATOR);
+            $logic->compressDir(preg_replace('/^(.+?dbbackup)\d+$/i', '', $save_path), $save_path . '.zip');
+            $builder->display('表：{$table}已备份完成，共{$total}数据。<br>所有数据库已备份。<br>文本保存在：{$filename}', ['table' => $table, 'total' => $res[1], 'filename' => 'runtime' . DIRECTORY_SEPARATOR . 'admin' . DIRECTORY_SEPARATOR . $save_path . '.zip']);
+        } else {
+            if ($res[2]) {
+                $tab_index += 1;
+                $url = url('backup') . '?' . http_build_query(['ids' => implode(',', $ids), 'save_path' => $save_path, 'filename' => '', 'tab_index' => $tab_index]);
+                $builder->display('<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><img src="/assets/tpextbuilder/js/layer/theme/default/loading-1.gif">表：{$table}已备份完成，共{$total}数据。<br>即将开放备份下一张表：{$next}。<script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', ['table' => $table, 'url' => $url, 'total' => $res[1], 'next' => $ids[$tab_index]]);
+            } else {
+                $url = url('backup') . '?' . http_build_query(['ids' => implode(',', $ids), 'save_path' => $save_path, 'filename' => $filename, 'start' => $res[0], 'tab_index' => $tab_index]);
+                $builder->display('<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><img src="/assets/tpextbuilder/js/layer/theme/default/loading-1.gif">正在备份表：{$table}，{$count} / {$total}条数据已备份。<script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', ['table' => $table, 'url' => $url, 'total' => $res[1], 'count' => $res[0]]);
+            }
+        }
+
+        return $builder;
     }
 
     /**
