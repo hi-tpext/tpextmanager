@@ -151,6 +151,7 @@ class DbBackupLogic
             $this->lines[] = "-- | Data of table `{$table}`";
             $this->lines[] = '-- | -----------------------------';
             $this->lines[] = '';
+            $this->flush();
         }
 
         $total = Db::table($table)->count();
@@ -160,28 +161,39 @@ class DbBackupLogic
             $list =  Db::table($table)->limit($start, $size)->order($pk)->cursor();
             $i = 0;
             foreach ($list as $row) {
-                $row = array_map('addslashes', $row);
-                $this->lines[] = "INSERT INTO `{$table}` VALUES ('" . str_replace(["\r", "\n"], ['\r', '\n'], implode("', '", $row)) . "');";
-                if (count($this->lines) >= 100) {
-                    file_put_contents($this->filename, implode(PHP_EOL, $this->lines), FILE_APPEND | LOCK_EX);
-                    $this->lines = [];
-                }
                 $i += 1;
+                $row = array_map('addslashes', $row);
+                $this->lines[] = "('" . str_replace(["\r", "\n"], ['\r', '\n'], implode("', '", $row)) . "')";
+                if (count($this->lines) >= 100) {
+                    $this->flush(PHP_EOL . "INSERT INTO `{$table}` VALUES " . PHP_EOL, ',' . PHP_EOL, ';');
+                }
             }
 
             if (count($this->lines) > 0) {
-                file_put_contents($this->filename, implode(PHP_EOL, $this->lines), FILE_APPEND | LOCK_EX);
-                $this->lines = [];
+                $this->flush(PHP_EOL . "INSERT INTO `{$table}` VALUES " . PHP_EOL, ',' . PHP_EOL, ';');
             }
 
             return [$start + $i, $total, $i < $size];
         } else {
             $this->lines[] = "-- | {$table} is empty";
-            file_put_contents($this->filename, implode(PHP_EOL, $this->lines), FILE_APPEND | LOCK_EX);
-            $this->lines = [];
-
+            $this->flush();
             return [0, 0, true];
         }
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $befor
+     * @param string $after
+     */
+    protected function flush($befor = '', $separator = '', $after = '')
+    {
+        if (count($this->lines) == 0) {
+            return;
+        }
+        file_put_contents($this->filename, $befor . implode($separator ?: PHP_EOL, $this->lines) . $after, FILE_APPEND | LOCK_EX);
+        $this->lines = [];
     }
 
     protected function getPk($table)
