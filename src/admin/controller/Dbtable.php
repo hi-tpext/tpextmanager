@@ -465,20 +465,20 @@ class Dbtable extends Controller
         }
         $filename = input('get.filename', '');
         $start = input('get.start', 0);
-        $table = $ids[$tab_index];
+        $table = $ids[$tab_index] ?? '';
         $builder = $this->builder();
         $logic = new DbBackupLogic;
-        $res = $logic->backupTable($table, $save_path, $filename, $start);
         $filename = $logic->getFilename();
-        if ($tab_index >= count($ids) - 1) {
+        if ($tab_index >= count($ids)) {
             $save_path = rtrim($save_path, DIRECTORY_SEPARATOR);
             $logic->compressDir(preg_replace('/^(.+?dbbackup)\d+$/i', '', $save_path), $save_path . '.zip');
-            $builder->display('表：{$table}已备份完成，共{$total}数据。<br>所有数据库已备份。<br>文件保存在：{$filename}', ['table' => $table, 'total' => $res[1], 'filename' => 'runtime' . DIRECTORY_SEPARATOR . $save_path . '.zip']);
+            $builder->display('所有数据库已备份。<br>文件保存在：{$filename}', ['filename' => 'runtime' . DIRECTORY_SEPARATOR . $save_path . '.zip']);
         } else {
+            $res = $logic->backupTable($table, $save_path, $filename, $start);
             if ($res[2]) {
                 $tab_index += 1;
                 $url = url('backup') . '?' . http_build_query(['ids' => implode(',', $ids), 'save_path' => $save_path, 'filename' => '', 'tab_index' => $tab_index]);
-                $builder->display('<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><img src="/assets/tpextbuilder/js/layer/theme/default/loading-1.gif">表：{$table}已备份完成，共{$total}数据。<br>即将开放备份下一张表：{$next}。<script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', ['table' => $table, 'url' => $url, 'total' => $res[1], 'next' => $ids[$tab_index]]);
+                $builder->display('<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><img src="/assets/tpextbuilder/js/layer/theme/default/loading-1.gif">表：{$table}已备份完成，共{$total}数据。<br>即将开放备份下一张表：{$next}。<script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', ['table' => $table, 'url' => $url, 'total' => $res[1], 'next' => $ids[$tab_index] ?? '--']);
             } else {
                 $url = url('backup') . '?' . http_build_query(['ids' => implode(',', $ids), 'save_path' => $save_path, 'filename' => $filename, 'start' => $res[0], 'tab_index' => $tab_index]);
                 $builder->display('<div class="hidden" id="goon">若页面长时间未刷新，可点此<a href="{$url|raw}">继续</a></div><img src="/assets/tpextbuilder/js/layer/theme/default/loading-1.gif">正在备份表：{$table}，{$count} / {$total}条数据已备份。<script>setTimeout(function(){location.href="{$url|raw}"},1000);setTimeout(function(){$("#goon").removeClass("hidden")},20000);</script>', ['table' => $table, 'url' => $url, 'total' => $res[1], 'count' => $res[0]]);

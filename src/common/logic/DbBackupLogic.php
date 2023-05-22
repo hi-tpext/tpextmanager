@@ -154,20 +154,24 @@ class DbBackupLogic
             $pk = $this->getPk($table);
             $list =  Db::table($table)->limit($start, $size)->order($pk)->cursor();
             $i = 0;
+            $fields = [];
             foreach ($list as $row) {
                 $i += 1;
+                if ($i == 1) {
+                    $fields = array_keys($row);
+                }
                 $row = array_map('addslashes', $row);
                 $this->lines[] = "('" . str_replace(["\r", "\n"], ['\r', '\n'], implode("', '", $row)) . "')";
                 if (count($this->lines) >= 100) {
-                    $this->flush(PHP_EOL . "INSERT INTO `{$table}` VALUES " . PHP_EOL, ',' . PHP_EOL, ';');
+                    $this->flush(PHP_EOL . "INSERT INTO `{$table}` " . "(`" . implode("`, `", $fields) . "`)" . " VALUES " . PHP_EOL, ',' . PHP_EOL, ';');
                 }
             }
 
             if (count($this->lines) > 0) {
-                $this->flush(PHP_EOL . "INSERT INTO `{$table}` VALUES " . PHP_EOL, ',' . PHP_EOL, ';');
+                $this->flush(PHP_EOL . "INSERT INTO `{$table}` " . "(`" . implode("`, `", $fields) . "`)" . " VALUES " . PHP_EOL, ',' . PHP_EOL, ';');
             }
 
-            return [$start + $i, $total, $i < $size];
+            return [$start + $i, $total, $i == 0];
         } else {
             $this->lines[] = "-- | {$table} is empty";
             $this->flush();
