@@ -554,7 +554,8 @@ class Extension extends Controller
 
         $table->getToolbar()
             ->btnLink(url('import'), 'zip包上传', 'btn-pink', 'mdi-cloud-upload', 'data-layer-szie="400px,250px" title="zip包上传扩展"')
-            ->btnRefresh();
+            ->btnRefresh()
+            ->html('<label class="label label-default">注意：部分扩展同时支持`composer`和`extend`模式。同一个扩展不能同时安装两种模式的，或跨模式升级。</label>')->pullRight();
 
         $table->useCheckbox(false);
         $table->useChooseColumns(false); //切换远程和本地表格列不同，会有问题，干脆禁用。
