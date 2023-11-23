@@ -175,7 +175,7 @@ class Creator extends Controller
         foreach ($fields as &$field) {
             $field['DISPLAYER_TYPE'] = 'show';
 
-            if (!preg_match('/^(?:updated?_time|updated?_at)$/', $field['COLUMN_NAME']) && !in_array($field['COLUMN_NAME'], ['id', 'sort'])) {
+            if (!preg_match('/^(?:updated?_time|updated?_at)$/i', $field['COLUMN_NAME']) && !in_array($field['COLUMN_NAME'], ['id', 'sort'])) {
                 $field['ATTR'] = ['search'];
             }
 
@@ -190,7 +190,7 @@ class Creator extends Controller
             if (
                 $this->dbLogic->isInteger($field['DATA_TYPE'])
                 || $this->dbLogic->isDecimal($field['DATA_TYPE'])
-                || (preg_match('/^.*(date|time)$/', $field['COLUMN_NAME']))
+                || (preg_match('/^.*(date|time)$/i', $field['COLUMN_NAME']))
                 || $field['COLUMN_NAME'] == 'sort'
             ) {
                 $field['ATTR'][] = 'sortable';
@@ -198,32 +198,32 @@ class Creator extends Controller
 
             if ($field['FIELD_RELATION']) {
                 $field['DISPLAYER_TYPE'] = 'belongsTo';
-            } else if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^(?:parent_id|pid)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'belongsTo';
                 $field['FIELD_RELATION'] = 'parent.name';
-            } else if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
+            } else if (preg_match('/^(\w+)_id$/i', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'belongsTo';
                 $field['FIELD_RELATION'] = Loader::parseName($mch[1], 1, false) . '.name';
-            } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
+            } else if (preg_match('/^(\w+)_ids$/i', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'matches';
                 $field['FIELD_RELATION'] = strtolower($mch[1]) . '[text, id]';
-            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'image';
-            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)s$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)s$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'images';
-            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'file';
-            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)s$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)s$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'files';
-            } else if (preg_match('/^is_\w+|has_\w+|on_\w+|enabled?$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^is_\w+|has_\w+|on_\w+|enabled?$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'switchBtn';
-            } else if (preg_match('/^\w*?(?:status|state)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:status|state)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'match';
-            } else if (preg_match('/^\w*?(?:password|pwd)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:password|pwd)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = '_';
-            } else if (preg_match('/^\w*?(?:openid|salt|token)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:openid|salt|token)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = '_';
-            } else if (preg_match('/^(?:delete_time|delete_at)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^(?:delete_time|delete_at)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = '_';
             }
         }
@@ -254,50 +254,50 @@ class Creator extends Controller
                 $field['DISPLAYER_TYPE'] = 'select';
             } else if ($field['COLUMN_NAME'] == 'id') {
                 $field['DISPLAYER_TYPE'] = 'hidden';
-            } else if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^(?:parent_id|pid)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'select';
                 $field['FIELD_RELATION'] = 'selectpage';
-            } else if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
+            } else if (preg_match('/^(\w+)_id$/i', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'select';
                 $field['FIELD_RELATION'] = '/admin/' . strtolower(Loader::parseName($mch[1], 1)) . '/selectpage';
-            } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
+            } else if (preg_match('/^(\w+)_ids$/i', $field['COLUMN_NAME'], $mch)) {
                 $field['DISPLAYER_TYPE'] = 'multipleSelect';
                 $field['FIELD_RELATION'] = '/admin/' . strtolower(Loader::parseName($mch[1], 1)) . '/selectpage';
-            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'image';
-            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)s$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:img|image|pic|photo|avatar|logo)s$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'images';
-            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'file';
-            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)s$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:file|video|audio|pkg)s$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'files';
-            } else if (preg_match('/^\w*?icon$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?icon$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'icon';
-            } else if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'show';
             } else if (preg_match('/time/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                 $field['DISPLAYER_TYPE'] = 'datetime';
             } else if (preg_match('/date/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                 $field['DISPLAYER_TYPE'] = 'date';
-            } else if (preg_match('/^\w*?content$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?content$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'editor';
-            } else if (preg_match('/^\w*?(remark|desc|description)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(remark|desc|description)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'textarea';
-            } else if (preg_match('/^is_\w+|has_\w+|on_\w+|enabled?$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^is_\w+|has_\w+|on_\w+|enabled?$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'switchBtn';
-            } else if (preg_match('/^\w*?(?:status|state)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:status|state)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'radio';
-            } else if (preg_match('/^\w*?(?:password|pwd)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:password|pwd)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'password';
-            } else if (preg_match('/^\w*?(?:openid|salt|token)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:openid|salt|token)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'show';
-            } else if (preg_match('/^\w*?(?:tags|kwds)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:tags|kwds)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'tags';
-            } else if (preg_match('/^\w*?map$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?map$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'map';
-            } else if (preg_match('/^\w*?color$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?color$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'color';
-            } else if (preg_match('/^\w*?(?:number|num|quantity|qty)$/', $field['COLUMN_NAME'])) {
+            } else if (preg_match('/^\w*?(?:number|num|quantity|qty)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'number';
             }
         }
