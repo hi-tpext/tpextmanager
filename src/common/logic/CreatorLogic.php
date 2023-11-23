@@ -102,6 +102,26 @@ class CreatorLogic
      */
     public function make($data, $prefix, $modelNamespace)
     {
+        $titleField = ''; //推测表的主显示字段: title / name
+
+        foreach ($data['TABLE_FIELDS'] as $field) {
+            if (in_array(strtolower($field['COLUMN_NAME']), ['title', 'name'])) {
+                $titleField = $field['COLUMN_NAME'];
+                break;
+            }
+        }
+
+        if (!$titleField) {
+            foreach ($data['TABLE_FIELDS'] as $field) {
+                if (preg_match('/^(?:\w+?title|\w+?name)$/', $field['COLUMN_NAME'])) {
+                    $titleField = $field['COLUMN_NAME'];
+                    break;
+                }
+            }
+        }
+
+        $data['title_field'] = $titleField ?: 'name';
+
         $this->begin($data, $prefix, $modelNamespace);
 
         if ($data['table_build']) {
@@ -189,12 +209,13 @@ class CreatorLogic
         $this->lines[] = '    {';
         $this->lines[] = "        \$this->dataModel = new {$modelName}Model;";
         $this->lines[] = "        \$this->pageTitle = '{$controllerTitle}';";
-        $this->lines[] = "        \$this->selectTextField = '{id}#{name}';";
-        $this->lines[] = "        \$this->selectSearch = 'name';";
+        $this->lines[] = "        \$this->selectTextField = '{id}#{{$data['title_field']}}';";
+        $this->lines[] = "        \$this->selectSearch = '{$data['title_field']}';";
         $this->lines[] = "        \$this->pk = 'id';";
         $this->lines[] = "        \$this->pagesize = 14;";
         $this->lines[] = "        \$this->sortOrder = 'id desc';";
         $this->lines[] = "        \$this->indexWith = []; //列表页关联";
+        $this->lines[] = "        \$this->selectWith = []; //下拉数据关联";
 
         $tableToolbars = $data['table_toolbars'] ?? [];
         $tableActions = $data['table_actions'] ?? [];
@@ -257,7 +278,7 @@ class CreatorLogic
                     continue;
                 }
 
-                if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME'])) {
+                if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/i', $field['COLUMN_NAME'])) {
                     $createAndUpdate[] = $field;
                     continue;
                 }
@@ -387,7 +408,7 @@ class CreatorLogic
                 if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
 
-                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
+                    if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/i', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/i', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                         $createAndUpdate[] = $field;
                         continue;
                     }
@@ -457,13 +478,13 @@ class CreatorLogic
                         continue;
                     }
 
-                    if (preg_match('/^(\w+)_id$/', $field['COLUMN_NAME'], $mch)) {
+                    if (preg_match('/^(\w+)_id$/i', $field['COLUMN_NAME'], $mch)) {
                         $this->lines[] = '        $search->select' . "('{$field['COLUMN_NAME']}')->dataUrl(url('theurl'));";
-                    } else if (preg_match('/^(\w+)_ids$/', $field['COLUMN_NAME'], $mch)) {
+                    } else if (preg_match('/^(\w+)_ids$/i', $field['COLUMN_NAME'], $mch)) {
                         $this->lines[] = '        $search->multipleSelect' . "('{$field['COLUMN_NAME']}')->dataUrl(url('theurl'));";
-                    } else if (preg_match('/^is_\w+|enabled?$/', $field['COLUMN_NAME'])) {
+                    } else if (preg_match('/^is_\w+|enabled?$/i', $field['COLUMN_NAME'])) {
                         $this->lines[] = '        $search->select' . "('{$field['COLUMN_NAME']}')->options([]);";
-                    } else if (preg_match('/^\w*?(?:status|state)$/', $field['COLUMN_NAME'])) {
+                    } else if (preg_match('/^\w*?(?:status|state)$/i', $field['COLUMN_NAME'])) {
                         $this->lines[] = '        $search->select' . "('{$field['COLUMN_NAME']}')->options([]);";
                     } else {
                         $this->lines[] = '        $search->text' . "('{$field['COLUMN_NAME']}');";
@@ -473,7 +494,7 @@ class CreatorLogic
 
             if (count($createAndUpdate)) {
                 foreach ($createAndUpdate as $timeField) {
-                    if (preg_match('/^\w*?date$/', $timeField['COLUMN_NAME'])) {
+                    if (preg_match('/^\w*?date$/i', $timeField['COLUMN_NAME'])) {
                         $this->lines[] = '        $search->date' . "('{$timeField['COLUMN_NAME']}_start');";
                         $this->lines[] = '        $search->date' . "('{$timeField['COLUMN_NAME']}_end');";
                     } else {
@@ -516,7 +537,7 @@ class CreatorLogic
                     continue;
                 }
 
-                if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/', $field['COLUMN_NAME'])) {
+                if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/i', $field['COLUMN_NAME'])) {
                     $createAndUpdate[] = $field;
                     continue;
                 }
@@ -604,7 +625,7 @@ class CreatorLogic
 
             foreach ($data['FORM_FIELDS'] as $field) {
 
-                if (preg_match('/^(?:parent_id|pid)$/', $field['COLUMN_NAME'])) {
+                if (preg_match('/^(?:parent_id|pid)$/i', $field['COLUMN_NAME'])) {
                     $this->lines[] = '';
                     $this->lines[] = '        if ($id && $data[\'' . $field['COLUMN_NAME'] . '\'] == $id) {';
                     $this->lines[] = '            $this->error(\'上级不能是本身\');';
@@ -1089,13 +1110,13 @@ class CreatorLogic
 
                 if ($field['COLUMN_NAME'] == 'id' && $field['COLUMN_COMMENT'] == '主键') {
                     $field['COLUMN_COMMENT'] = '编号';
-                } else if (preg_match('/^(.+?)id$/', $field['COLUMN_COMMENT'], $mch)) {
+                } else if (preg_match('/^(.+?)id$/i', $field['COLUMN_COMMENT'], $mch)) {
                     $field['COLUMN_COMMENT'] = $mch[1];
                 }
 
                 $lines[] = "    '{$field['COLUMN_NAME']}'  => '{$field['COLUMN_COMMENT']}',";
 
-                if (preg_match('/^\w*?(time|date)$/', $field['COLUMN_NAME'])) {
+                if (preg_match('/^\w*?(time|date)$/i', $field['COLUMN_NAME'])) {
                     if (!isset($fields[$field['COLUMN_NAME'] . '_start'])) {
                         $lines[] = "    '{$field['COLUMN_NAME']}_start'  => '{$field['COLUMN_COMMENT']}起',";
                     }
