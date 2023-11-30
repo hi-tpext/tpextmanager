@@ -1188,15 +1188,14 @@ class Extension extends Controller
             $this->error('扩展不存在！');
         }
 
-        $res = $this->dataModel->update(['enable' => $value], ['key' => $id]);
+        $instance = $this->extensions[$id];
+        $res = $instance->enabled($value);
 
         if ($res) {
-            $instance = $this->extensions[$id];
-            $instance->enabled($value);
-
+            $this->dataModel->update(['enable' => $value], ['key' => $id]);
             $this->success(($value == 1 ? '启用' : '禁用') . '成功');
         } else {
-            $this->error('修改失败，或无更改');
+            $this->error('操作失败');
         }
     }
 
