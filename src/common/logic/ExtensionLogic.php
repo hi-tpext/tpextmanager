@@ -282,10 +282,25 @@ class ExtensionLogic
 
     public function getRemoteFile($url)
     {
+        $headers = [
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Encoding: gzip, deflate, br',
+            'Accept-Language: zh-CN,en-US;q=0.7,en;q=0.3',
+            'Connection: keep-alive',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/99.0 Chrome/99.0',
+            'Referer: ' . preg_replace('/^(https?:\/\/[^\/]+).*$/i', '$1', $url) . '/',
+            'Host: ' . preg_replace('/^https?:\/\/([^\/]+).*$/i', '$1', $url),
+        ];
+
         $contextOptions = [
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
+            'http' => [
+                'method' => 'GET',
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+                'header' => implode("\r\n", $headers),
+                'timeout' => 300 // 超时时间（单位:s）
             ]
         ];
 
