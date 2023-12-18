@@ -610,7 +610,7 @@ class ShopGoodsExtend extends Model
                     'relation_type|关联类型' => 'require',
                     'foreign_table_name|关联表' => 'require',
                     'relation_key|关联字段' => 'require',
-                    'relation_name|关联字段' => 'regex:[a-z0-9A-Z_]{0,}',
+                    'relation_name|关联名称' => 'regex:[a-z0-9A-Z_]{0,}',
                 ]);
 
                 if (true !== $result) {
