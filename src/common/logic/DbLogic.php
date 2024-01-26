@@ -77,6 +77,9 @@ class DbLogic
         if ($where && !preg_match('/\s*and/i', $where)) {
             $where = 'AND ' . $where;
         }
+        if (!$sortOrder) {
+            $sortOrder = 'TABLE_NAME ASC';
+        }
         $tables = Db::query("select {$columns} from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
         return $tables;
@@ -93,6 +96,9 @@ class DbLogic
     {
         if ($where && !preg_match('/\s*and/i', $where)) {
             $where = 'AND ' . $where;
+        }
+        if (!$sortOrder) {
+            $sortOrder = 'TABLE_NAME ASC';
         }
         $tables = Db::query("select TABLE_NAME,TABLE_COMMENT from information_schema.tables where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_TYPE`='BASE TABLE' AND `TABLE_NAME` LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
@@ -127,6 +133,9 @@ class DbLogic
         if ($where && !preg_match('/\s*and/i', $where)) {
             $where = 'AND ' . $where;
         }
+        if (!$sortOrder) {
+            $sortOrder = 'ORDINAL_POSITION ASC';
+        }
         $fields = Db::query("select {$columns} from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME` NOT LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
         return $fields;
@@ -159,6 +168,9 @@ class DbLogic
     {
         if ($where && !preg_match('/\s*and/i', $where)) {
             $where = 'AND ' . $where;
+        }
+        if (!$sortOrder) {
+            $sortOrder = 'ORDINAL_POSITION ASC';
         }
         $fields = Db::query("select COLUMN_NAME,COLUMN_COMMENT from information_schema.columns where `TABLE_SCHEMA`='{$this->database}' AND `TABLE_NAME`='{$tableName}' AND `COLUMN_NAME` LIKE '%_del_at_%' {$where} ORDER BY {$sortOrder}");
 
