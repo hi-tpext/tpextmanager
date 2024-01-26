@@ -296,13 +296,13 @@ class ExtensionLogic
         $contextOptions = [
             'http' => [
                 'method' => 'GET',
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                ],
                 'header' => implode("\r\n", $headers),
                 'timeout' => 300 // 超时时间（单位:s）
-            ]
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
         ];
 
         $conetnt = file_get_contents($url, false, stream_context_create($contextOptions));
