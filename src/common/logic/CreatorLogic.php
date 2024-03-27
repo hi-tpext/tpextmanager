@@ -405,8 +405,11 @@ class CreatorLogic
 
             foreach ($data['TABLE_FIELDS'] as $field) {
 
-                if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
+                if (preg_match('/^(?:delete_time|delete_at)$/i', $field['COLUMN_NAME'])) {
+                    continue;
+                }
 
+                if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
                     if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/i', $field['COLUMN_NAME']) || preg_match('/^\w*?(time|date)$/i', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
                         $createAndUpdate[] = $field;
@@ -470,6 +473,10 @@ class CreatorLogic
             $createAndUpdate = [];
 
             foreach ($data['TABLE_FIELDS'] as $field) {
+
+                if (preg_match('/^(?:delete_time|delete_at)$/i', $field['COLUMN_NAME'])) {
+                    continue;
+                }
 
                 if (isset($field['ATTR']) && in_array('search', $field['ATTR'])) {
 
