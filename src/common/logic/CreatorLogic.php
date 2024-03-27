@@ -654,7 +654,7 @@ class CreatorLogic
         $update_time = $dbLogic->getFieldInfo($prefix . $table, 'update_time');
 
         if ($solft_delete == 1) {
-            $lines[] = "use think\Model\concern\SoftDelete;";
+            $lines[] = "use think\model\concern\SoftDelete;";
         }
 
         $lines[] = '';
@@ -670,7 +670,7 @@ class CreatorLogic
 
 
         if ($solft_delete) {
-            $lines[] = "use SoftDelete;";
+            $lines[] = "    use SoftDelete;";
         }
 
         $lines[] = "    protected \$name = '{$table}';";
