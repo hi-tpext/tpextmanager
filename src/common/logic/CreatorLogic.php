@@ -444,6 +444,7 @@ class CreatorLogic
         $this->lines[] = '    protected function buildSearch()';
         $this->lines[] = '    {';
         $this->lines[] = '        $search = $this->search;';
+        $this->lines[] = '        $search->defaultDisplayerColSize(3);';
         $this->lines[] = '';
         if (!empty($data['TABLE_FIELDS'])) {
 

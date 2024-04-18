@@ -281,7 +281,7 @@ class Dbtable extends Controller
      * @param integer $id
      * @return mixed
      */
-    private function save($id = 0)
+    protected function save($id = 0)
     {
         $data = request()->only([
             'TABLE_NAME',
@@ -336,7 +336,7 @@ class Dbtable extends Controller
      *
      * @return void
      */
-    protected function buildTable(&$data = [])
+    protected function buildTable(&$data = [], $isExporting = false)
     {
         $protectedTables = $this->getProtectedTables();
         $table = $this->table;

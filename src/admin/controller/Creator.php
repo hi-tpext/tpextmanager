@@ -321,7 +321,7 @@ class Creator extends Controller
      * @param integer $id
      * @return mixed
      */
-    private function save($id = 0)
+    protected function save($id = 0)
     {
         $data = request()->post();
 
@@ -412,7 +412,7 @@ class Creator extends Controller
      *
      * @return void
      */
-    protected function buildTable(&$data = [])
+    protected function buildTable(&$data = [], $isExporting = false)
     {
         $table = $this->table;
 
@@ -526,7 +526,7 @@ class Creator extends Controller
             $form->show('TABLE_NAME', '表名称')->value($id);
             $form->raw('model_namespace', 'model命名空间')->value('<b>app\\' . Module::getInstance()->config('model_namespace') . '\\model\\</b>可在扩展配置中修改');
             if (is_file($modelFileName)) {
-                $form->raw('tips', '提示')->value('已存在模型文件，将覆被盖：<b>' . str_replace(App::getRootPath(), '', $modelFileName) . '</b>');
+                $form->raw('tips', '提示')->value('已存在模型文件，将被覆盖：<b>' . str_replace(App::getRootPath(), '', $modelFileName) . '</b>');
             }
             $form->text('model_title', 'model注释')->default($tableInfo['TABLE_COMMENT'])->required();
 
