@@ -314,9 +314,11 @@ class DbLogic
             }
         }
 
+        $charset = preg_match('/^[1-5]\.[0-5]/', $this->getMysqlVersion()) ? 'utf8' : 'utf8mb4';
+
         $sql = "CREATE TABLE IF NOT EXISTS `$tableName`(
             `{$pkinfo['COLUMN_NAME']}` {$attr} primary key COMMENT '{$pkinfo['COLUMN_COMMENT']}'{$create_time_column}{$update_time_column}
-            )ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='{$data['TABLE_COMMENT']}'";
+            )ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET={$charset} COMMENT='{$data['TABLE_COMMENT']}'";
         try {
             Db::execute($sql);
         } catch (\Exception $ex) {
@@ -327,6 +329,11 @@ class DbLogic
         }
 
         return true;
+    }
+
+    public function getMysqlVersion()
+    {
+        return Db::query("SELECT VERSION() AS ver")[0]['ver'];
     }
 
     /**
