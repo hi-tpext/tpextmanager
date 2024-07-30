@@ -541,7 +541,7 @@ class Creator extends Controller
 
 
             $form->tab('示列&说明');
-            $form->raw('tips', '')->size(12, 12)->showLabel(false)->value('实列：<pre>' .
+            $form->raw('demo', '')->size(12, 12)->showLabel(false)->value('实列：<pre>' .
                 '
 //产品基本信息表
 class ShopGoods extends Model
