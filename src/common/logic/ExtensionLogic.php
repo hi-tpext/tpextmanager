@@ -10,7 +10,7 @@ class ExtensionLogic
 {
     protected $errors = [];
 
-    protected $remoteUrl = 'https://codeberg.org/hi-tpext/extensions/raw/branch/main/extensions.json';
+    protected $remoteUrl = 'https://www.gitlink.org.cn/attachments/entries/get_file?download_url=https://www.gitlink.org.cn/api/hi-tpext/extensions/raw/extensions.json?ref=main';
 
     /**
      * Undocumented function
