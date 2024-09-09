@@ -274,6 +274,8 @@ class Creator extends Controller
                 $field['DISPLAYER_TYPE'] = 'files';
             } else if (preg_match('/^\w*?icon$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'icon';
+            } else if (preg_match('/^(?:delete_time|delete_at)$/i', $field['COLUMN_NAME'])) {
+                $field['DISPLAYER_TYPE'] = '_';
             } else if (preg_match('/^(?:created?_time|add_time|created?_at|updated?_time|updated?_at)$/i', $field['COLUMN_NAME'])) {
                 $field['DISPLAYER_TYPE'] = 'show';
             } else if (preg_match('/time/', $field['COLUMN_NAME']) || preg_match('/date|datetime|timestamp/i', $field['COLUMN_TYPE'])) {
