@@ -431,8 +431,8 @@ class Creator extends Controller
             ->btnToggleSearch();
 
         $table->getActionbar()
-            ->btnEdit('', '生成', 'btn-success', 'mdi-code-braces', 'title="代码生成" data-layer-size="1200px,98%"')
-            ->btnLink('relations', url('relations', ['id' => '__data.pk__']), '关联', 'btn-info', 'mdi-link-variant', 'title="设置表关联" data-layer-size="1200px,98%"')
+            ->btnEdit('', '生成', 'btn-success', 'mdi-code-braces', 'title="代码生成" data-layer-size="1210px,98%"')
+            ->btnLink('relations', url('relations', ['id' => '__data.pk__']), '关联', 'btn-info', 'mdi-link-variant', 'title="设置表关联" data-layer-size="1210px,98%"')
             ->btnLink('lang', url('lang', ['id' => '__data.pk__']), '翻译', 'btn-danger', 'mdi-translate', 'title="生成翻译文件"');
 
         $table->useCheckbox(false);
