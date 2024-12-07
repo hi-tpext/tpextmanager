@@ -512,7 +512,7 @@ class Creator extends Controller
 
             foreach ($relations as $key => &$pdata) {
                 if ($pdata['relation_type'] == 'belongs_to') {
-                    $pdata['field_name'] =  $pdata['foreign_key'];
+                    $pdata['field_name'] = $pdata['foreign_key'];
                     $pdata['relation_key'] = $pdata['local_key'];
                 } else {
                     $pdata['relation_key'] = $pdata['foreign_key'];
@@ -811,6 +811,8 @@ class ShopGoodsExtend extends Model
                     $form->text('COLUMN_NAME', '字段名')->rendering(function ($field) {
                         if (!isset($field->data['__can_delete__']) || $field->data['__can_delete__'] == 0) {
                             $field->readonly();
+                        } else {
+                            $field->readonly(false);
                         }
                     })->required(),
                     $form->show('COLUMN_TYPE', '字段类型')->default('--'),
