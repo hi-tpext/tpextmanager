@@ -177,6 +177,7 @@ class Extension extends Controller
             }
             $this->success('数据库配置成功', url('prepare'), 1);
         } else {
+            builderRes::getInstance()->loaded();
             $builder = Builder::getInstance('扩展管理', '数据库配置');
 
             $builder->content(3)->display('');
@@ -223,7 +224,7 @@ class Extension extends Controller
 
             $url = url('prepare');
             $form->raw('tips', '提示')->value('<p>数据库配置信息将保存在<b>`config/database.php`</b>文件中，请确保程序对此文件有可写权限。'
-                . '如果您不想通过此程序修改配置，请手动修改数据库配置文件，<a href="' . $url . '">后点此进入</a>下一步，如果仍然回到此页面，请检查配置。</p>');
+                . '如果您不想通过此程序修改配置，请手动修改数据库配置文件，后<a href="' . $url . '">[点此]</a>进入下一步，如果仍然回到此页面，请检查配置。</p>');
 
             $data = Session::get('dbconfig');
 
@@ -272,7 +273,7 @@ class Extension extends Controller
             return "<h4>(4/4)</h4><p>安装[builder.mdeditor]，完成！</p><script>setTimeout(function(){location.href='{$next}'},1000);</script>";
         } else {
             ExtLoader::trigger('tpext_extension_prepare_done'); //如果扩展要在首次安装时静默安装，可监听此事件
-            $next = url('/admin/extension/index');
+            $next = url('/admin/extension/index', ['first_install' => 1]);
             return "<h4>(预安装完成)</h4><p>即将跳转[扩展管理]页面，继续安装其他扩展！</p><script>setTimeout(function(){location.href='{$next}'},1500);</script>";
         }
     }
@@ -414,6 +415,7 @@ class Extension extends Controller
     protected function buildTable(&$data = [], $isExporting = false)
     {
         $table = $this->table;
+        $first_install = input('first_install', 0);
 
         $table->show('title', '标题');
         $table->show('name', '标识');
@@ -495,6 +497,10 @@ class Extension extends Controller
 
         $table->useCheckbox(false);
         $table->useChooseColumns(false); //切换远程和本地表格列不同，会有问题，干脆禁用。
+
+        if ($first_install == 1) {
+            $table->addBottom()->content()->display('<div style="padding:10px"><h5>首次安装提示：</h5>安装完成点此<a href="' . url('/admin/index') . '">[进入后台]</a><br>此页面排版错乱？点此<a href="' . url('prepare') . '">[刷新]</a>样式资源</div>');
+        }
     }
 
     public function install()
