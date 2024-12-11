@@ -153,7 +153,7 @@ class Dbtable extends Controller
 
         Session::set('admin_try_db_manage_ok', time());
 
-        $this->success('已完成验证', url('index'), '', 1);
+        $this->success('已完成验证', url('trash'), '', 1);
     }
 
     private function randstr($randLength = 16)
