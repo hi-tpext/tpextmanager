@@ -783,8 +783,9 @@ class ShopGoodsExtend extends Model
                     foreach ($fields as &$field) {
                         if ($field['COLUMN_NAME'] == $key) {
                             $field['COLUMN_COMMENT'] = $val;
-                            $find = true;
                             $field['__can_delete__'] = 0;
+                            $field['__readonly__fields__'] = ['COLUMN_NAME'];
+                            $find = true;
                             break;
                         }
                     }
@@ -808,6 +809,7 @@ class ShopGoodsExtend extends Model
 
             $form->items('FORM_FIELDS', '翻译')->dataWithId($fields, 'COLUMN_NAME')->size(12, 12)
                 ->with(
+                    //不推荐rendering的方式，使用上面设置__readonly__fields__的方式代替
                     $form->text('COLUMN_NAME', '字段名')->rendering(function ($field) {
                         if (!isset($field->data['__can_delete__']) || $field->data['__can_delete__'] == 0) {
                             $field->readonly();
